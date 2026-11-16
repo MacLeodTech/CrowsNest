@@ -84,7 +84,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 - [ ] **Profile page:** email/avatar and naming a device.
 - [ ] **Sign-in:** editing the `name=email` env allowlist.
 - [ ] **Backups:** a restore for config-file games; try each restore command on a real world; config-file games still back up
-  inside their own data and would need the bind added by hand; an optional host-side mount check.
+  inside their own data and would need the bind added by hand.
 - [ ] **File editing, next steps:** validation for formats other than JSON, and `files:` for
   Source, Don't Starve Together and 7 Days to Die. **Palworld:** its image rebuilds the whole
   `PalWorldSettings.ini` from environment variables on every start, so nothing declared there would last; it needs
