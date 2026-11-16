@@ -8,6 +8,7 @@ package gamefiles
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -152,6 +153,36 @@ func CheckText(b []byte) error {
 		return ErrNotText
 	}
 	return nil
+}
+
+// ErrInvalidJSON is returned when a .json file would be saved with a syntax error.
+var ErrInvalidJSON = errors.New("invalid JSON")
+
+// CheckSyntax refuses content that cannot be what the file's name says it is. Only .json is checked: a game that
+// reads JSON stops at the first typo, so catching it here saves a crash loop. Anything else passes.
+func (s Spec) CheckSyntax(content string) error {
+	if !strings.HasSuffix(strings.ToLower(s.Path), ".json") || strings.TrimSpace(content) == "" {
+		return nil
+	}
+	var v any
+	err := json.Unmarshal([]byte(content), &v)
+	var se *json.SyntaxError
+	switch {
+	case err == nil:
+		return nil
+	case errors.As(err, &se):
+		line, col := 1, 1
+		for _, c := range []byte(content[:min(int(se.Offset), len(content))]) {
+			if c == '\n' {
+				line, col = line+1, 1
+			} else {
+				col++
+			}
+		}
+		return fmt.Errorf("%w: %s (line %d, column %d)", ErrInvalidJSON, se.Error(), line, col)
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidJSON, err.Error())
+	}
 }
 
 func (s Spec) regexps() []*regexp.Regexp {
