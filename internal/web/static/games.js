@@ -51,7 +51,8 @@ function reportImage(g) {
   delete pendingImage[g.id];
   const name = g.display_name || g.id;
   if (g.state === "failed") { toast(`${name}: ${g.error || "the image change failed"}`, "error"); return; }
-  if (kind === "rollback") toast(`${name} rolled back to ${shortDigest(g.digest)}.`, "ok");
+  if (kind === "retry") toast(`${name} installed.`, "ok");
+  else if (kind === "rollback") toast(`${name} rolled back to ${shortDigest(g.digest)}.`, "ok");
   else if (g.refresh === "up_to_date") toast(`${name} is already up to date.`, "info");
   else toast(`${name} updated${g.digest ? " to " + shortDigest(g.digest) : ""}.`, "ok");
 }
@@ -91,21 +92,24 @@ function renderFleet(configured) {
     const edit = el("button", "btn btn-ghost", "Settings");
     edit.type = "button"; edit.disabled = busy;
     edit.addEventListener("click", () => startEdit(g));
-    const upd = el("button", "btn btn-ghost", "Update image");
+    const failed = g.state === "failed";
+    const upd = el("button", failed ? "btn btn-primary" : "btn btn-ghost", failed ? "Retry install" : "Update image");
     upd.type = "button"; upd.disabled = busy;
     upd.addEventListener("click", async () => {
       const name = g.display_name || g.id;
       const ok = await confirmAction({
         eyebrow: "// refit",
-        title: `Update ${name}?`,
-        message: `This pulls ${g.image || "the image"} again. If it points to a new image, the container is recreated on it (the game must be stopped; the data folder is kept) and the current image is kept for Roll back. If nothing changed, the container is left alone.`,
-        confirmLabel: "Update image",
+        title: failed ? `Retry ${name}?` : `Update ${name}?`,
+        message: failed
+          ? `The last install did not finish${g.error ? " (" + g.error.slice(-160) + ")" : ""}. This runs it again from the saved settings: it pulls ${g.image || "the image"} and creates the container. Fix the cause first (for example the host policy.yaml, then restart the guard).`
+          : `This pulls ${g.image || "the image"} again. If it points to a new image, the container is recreated on it (the game must be stopped; the data folder is kept) and the current image is kept for Roll back. If nothing changed, the container is left alone.`,
+        confirmLabel: failed ? "Retry install" : "Update image",
       });
       if (!ok) return;
       upd.disabled = true;
       const res = await callAPI(`/api/managed/games/${encodeURIComponent(g.id)}/refresh`, { method: "POST" });
       if (!res.ok) toast(await errorText(res, "Update"), "error");
-      else { pendingImage[g.id] = "refresh"; toast(`${name}: checking for a new image…`, "info"); }
+      else { pendingImage[g.id] = failed ? "retry" : "refresh"; toast(`${name}: checking for a new image…`, "info"); }
       await loadGames();
     });
     const back = el("button", "btn btn-ghost", "Roll back");

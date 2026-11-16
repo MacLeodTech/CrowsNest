@@ -44,6 +44,7 @@ type fakeDocker struct {
 	running map[string]bool
 	digests map[string]string // repo:tag -> what it resolves to now (default: one per ref)
 	removed []string
+	pullErr error // returned by Pull while set
 }
 
 func defaultDigest(ref string) string {
@@ -76,7 +77,7 @@ func (f *fakeDocker) Pull(_ context.Context, i string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.pulled = append(f.pulled, i)
-	return nil
+	return f.pullErr
 }
 func (f *fakeDocker) Remove(_ context.Context, n string) error {
 	f.mu.Lock()
@@ -1453,5 +1454,32 @@ func TestStoppedGameFilesGoThroughTheHelper(t *testing.T) {
 	busy = true // mid start or stop: never touch the data folder then
 	if _, err := m.ReadStopped(context.Background(), "minecraft", sp); err == nil || len(got) != 2 {
 		t.Fatalf("helper ran while the game was starting: %v", err)
+	}
+}
+
+// A game whose install failed (the pull was refused) is not stuck: Update image
+// runs the install again and, once the cause is gone, the game becomes ready.
+func TestRefreshRetriesAFailedInstall(t *testing.T) {
+	m, fd := newManager(t)
+	fd.mu.Lock()
+	fd.pullErr = errors.New("pull refused")
+	fd.mu.Unlock()
+	req := Request{ID: "minecraft", Module: "minecraft",
+		Options: map[string]string{"eula": "TRUE"}, Secrets: map[string]string{"rcon_password": "x"}}
+	if err := m.Enable(req); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, m, "minecraft", StateFailed)
+	fd.mu.Lock()
+	fd.pullErr = nil
+	fd.mu.Unlock()
+	if err := m.Refresh("minecraft"); err != nil {
+		t.Fatalf("refresh of a failed game: %v", err)
+	}
+	waitState(t, m, "minecraft", StateReady)
+	for _, g := range m.List() {
+		if g.ID == "minecraft" && g.Error != "" {
+			t.Errorf("error kept after a good retry: %q", g.Error)
+		}
 	}
 }
