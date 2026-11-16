@@ -4,6 +4,18 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Guard image (R24)
+
+- [x] **The guard runs its own minimal image (done 2026-11-16, v0.16.9).** `ghcr.io/<owner>/crowsnest-guard` is the
+  static binary on `scratch` (16 MB, no shell, no certificates, non-root), built, scanned, pushed and signed by
+  `publish.yml` beside the panel image. The quickstart and `compose.yaml.example` guard use it, with
+  `healthcheck: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]` in place of `wget`.
+  `healthcheck URL` only probes plain http on a loopback address: the request URL is a constant and the dialer is
+  pinned to the validated address, so there is no argv-controlled fetch (gosec G704 clean, no `#nosec`). Tried the
+  published image read-only with all capabilities dropped: healthy through compose. Note the healthcheck must use
+  the exec form; a shell form fails on an image with no shell. `quickstart/.env.example` now pins 0.16.9, the first
+  tag with a guard image.
+
 ## Engine API only (Phase 6)
 
 - [x] **The docker CLI and compose are gone from the panel image (done 2026-11-12).** Start, stop and exec now go

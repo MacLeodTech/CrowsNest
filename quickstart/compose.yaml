@@ -43,7 +43,7 @@ services:
   # Refusals: docker logs dockerproxy-crowsnest 2>&1 | grep DENY
   guard:
     <<: *hardening
-    image: ghcr.io/fiddler110/crowsnest:${CROWSNEST_TAG:?copy .env.example to .env to pin the release}
+    image: ghcr.io/fiddler110/crowsnest-guard:${CROWSNEST_TAG:?copy .env.example to .env to pin the release}   # the guard alone: a static binary on scratch, no shell
     container_name: dockerproxy-crowsnest
     hostname: dockerproxy-crowsnest
     command: ["guard", "--listen", ":2375", "--exec"]
@@ -55,7 +55,7 @@ services:
       - GUARD_POLICY=/etc/crowsnest/policy/policy.yaml
       - GUARD_MODULES_DIR=/app/data/modules      # read-only: lets the guard check signed URL-installed modules
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2375/_ping"]
+      test: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]
       interval: 60s
       timeout: 5s
       retries: 3
