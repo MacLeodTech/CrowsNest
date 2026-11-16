@@ -171,7 +171,7 @@ signing key for `managed.trusted_keys` is in that README.
 
 ## Running it
 
-Images are published to `ghcr.io/fiddler110/crowsnest` (`:latest`, `:X.Y.Z`, `:X.Y`, `:sha-<commit>` and `:dev`),
+Images are published to `ghcr.io/macleodtech/crowsnest` (`:latest`, `:X.Y.Z`, `:X.Y`, `:sha-<commit>` and `:dev`),
 scanned, signed with cosign and shipped with an SBOM ([publishing](docs/publishing.md)). You don't need a Go
 toolchain, but you do need the [`quickstart/`](quickstart/README.md) folder, so clone the repository (or copy that
 folder).

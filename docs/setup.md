@@ -6,7 +6,7 @@ Back to the [README](../README.md).
 
 ## Hand-configured setup
 
-Images are published to `ghcr.io/fiddler110/crowsnest` (`:latest`, `:X.Y.Z`, `:X.Y`, `:dev`). Every push to `main`
+Images are published to `ghcr.io/macleodtech/crowsnest` (`:latest`, `:X.Y.Z`, `:X.Y`, `:dev`). Every push to `main`
 passes the CI and security gate before a release is cut. Images are scanned, signed with cosign and shipped with an
 SBOM; see [publishing.md](publishing.md). You don't need a Go toolchain.
 
