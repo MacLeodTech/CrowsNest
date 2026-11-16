@@ -79,6 +79,28 @@ func (u UserRecord) CanAccess(gameID string) bool {
 	return false
 }
 
+// CanStop reports whether the user may stop (or switch away from) the game
+// with this id: admins always, and anyone who has not been made start-only
+// for it. It does not check CanAccess.
+func (u UserRecord) CanStop(gameID string) bool {
+	if u.EffectiveRole() == RoleAdmin {
+		return true
+	}
+	for _, g := range u.StartOnly {
+		if g == gameID {
+			return false
+		}
+	}
+	return true
+}
+
+// CanStopGame is CanStop for username's current record, looked up on every
+// call so a change applies at once.
+func (m *SessionManager) CanStopGame(username, gameID string) bool {
+	rec, _ := m.lookupUser(username)
+	return rec.CanStop(gameID)
+}
+
 // CanAccessGame is CanAccess for username's current record, looked up on
 // every call so a change applies at once.
 func (m *SessionManager) CanAccessGame(username, gameID string) bool {

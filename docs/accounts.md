@@ -20,6 +20,11 @@ user's very next request.
 To limit a user to some games from the command line, run `crowsnest set-games <user> palworld,valheim`; with no list
 it lifts the limit, so the user may use every game. This is the same game allowlist as on the Users tab.
 
+To let a player start a game but not stop it, tick it under "start but not stop" when editing the player on the Users
+tab, or run `crowsnest set-start-only <user> palworld`; with no list it lifts the limit. A start-only player cannot stop
+that game or switch away from it (a switch stops the game it leaves), and the dashboard hides their Stop button. It
+does not stop the idle and night auto-stop, which are not a person's action. Admins are never limited.
+
 ## Sessions
 
 A session is a signed cookie that lasts 3 hours without activity (`server.session_idle_minutes`, default 180).

@@ -174,12 +174,24 @@ func main() {
 		if err := setGames(os.Args[2], list); err != nil {
 			log.Fatal(err)
 		}
+	case "set-start-only":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "usage: crowsnest set-start-only <username> [game-id,game-id,...]  (no list: lift the limit)")
+			os.Exit(2)
+		}
+		list := ""
+		if len(os.Args) > 3 {
+			list = os.Args[3]
+		}
+		if err := setStartOnly(os.Args[2], list); err != nil {
+			log.Fatal(err)
+		}
 	case "enable-password-login":
 		if err := enablePasswordLogin(); err != nil {
 			log.Fatal(err)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (want: serve, doctor, module, execguard, guard, healthcheck, set-password, set-role, set-games, revoke-sessions, enable-password-login)\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command %q (want: serve, doctor, module, execguard, guard, healthcheck, set-password, set-role, set-games, set-start-only, revoke-sessions, enable-password-login)\n", cmd)
 		os.Exit(2)
 	}
 }
@@ -787,6 +799,29 @@ func setGames(username, list string) error {
 		fmt.Printf("%s may now use every game\n", strings.ToLower(username))
 	} else {
 		fmt.Printf("%s is now limited to: %s (a running server picks this up within a few seconds)\n", strings.ToLower(username), strings.Join(ids, ", "))
+	}
+	return nil
+}
+
+// setStartOnly implements `crowsnest set-start-only <username> [game-id,...]`:
+// the user may start those games but not stop them (or switch away from them).
+// With no list the limit is lifted. A running server picks it up within seconds.
+func setStartOnly(username, list string) error {
+	ids, err := auth.ParseGameList(list)
+	if err != nil {
+		return err
+	}
+	cfg, err := config.Load(configPath())
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	if err := auth.SetStartOnly(cfg.UsersFile, username, ids); err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		fmt.Printf("%s may stop every game they can start\n", strings.ToLower(username))
+	} else {
+		fmt.Printf("%s may start but not stop: %s (a running server picks this up within a few seconds)\n", strings.ToLower(username), strings.Join(ids, ", "))
 	}
 	return nil
 }

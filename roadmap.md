@@ -81,7 +81,6 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### B. Accounts and settings (open)
 
-- [ ] **Per-user permissions:** per-game *actions* (may start, not stop).
 - [ ] **Profile page:** email/avatar, naming a device, an admin view of other people's sessions, and showing the
   new sign-in notice beyond the Account page (dashboard banner, Discord; see R19).
 - [ ] **Sign-in:** editing the `name=email`

@@ -86,7 +86,7 @@
 
       <div class="actions">
         <button class="btn btn-primary start-btn" type="button"><svg class="icon"><use href="#i-play"/></svg>Start</button>
-        <button class="btn btn-danger stop-btn" type="button"><svg class="icon"><use href="#i-stop"/></svg>Stop</button>
+        <button class="btn btn-danger stop-btn" type="button"{{if not .CanStop}} hidden{{end}}><svg class="icon"><use href="#i-stop"/></svg>Stop</button>
         <div class="tabs" role="tablist" aria-label="{{.DisplayName}} panels">
           {{if $.IsAdmin}}<button class="tab" type="button" role="tab" data-tab="logs" id="tab-{{.ID}}-logs" aria-controls="panel-{{.ID}}-logs" aria-selected="false"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg>Logs</button>{{end}}
           <button class="tab" type="button" role="tab" data-tab="stats" id="tab-{{.ID}}-stats" aria-controls="panel-{{.ID}}-stats" aria-selected="false"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg>Stats</button>

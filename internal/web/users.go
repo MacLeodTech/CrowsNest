@@ -32,6 +32,8 @@ type userView struct {
 	OIDCEmail string `json:"oidc_email,omitempty"`
 	// Games is the player's allowlist; empty means every game.
 	Games []string `json:"games"`
+	// StartOnly lists games the player may start but not stop.
+	StartOnly []string `json:"start_only"`
 	// MFA is whether the user has an authenticator app set up.
 	MFA  bool `json:"mfa"`
 	Self bool `json:"self"`
@@ -56,6 +58,8 @@ type userBody struct {
 	ResetMFA bool `json:"reset_mfa"`
 	// Games limits a player to these game ids; an empty list means all games.
 	Games *[]string `json:"games"`
+	// StartOnly lists games a player may start but not stop; an empty list lifts the limit.
+	StartOnly *[]string `json:"start_only"`
 }
 
 // checkGames validates an allowlist against the games the registry knows.
@@ -77,7 +81,7 @@ func (a *App) userList(self string) []userView {
 	byName := map[string]*userView{}
 	for name, rec := range snap {
 		byName[name] = &userView{Username: name, Role: rec.EffectiveRole(), HasPassword: rec.Hash != "",
-			Google: rec.GoogleEmail != "", GoogleEmail: rec.GoogleEmail, OIDCEmail: rec.OIDCEmail, Games: rec.Games, Managed: true}
+			Google: rec.GoogleEmail != "", GoogleEmail: rec.GoogleEmail, OIDCEmail: rec.OIDCEmail, Games: rec.Games, StartOnly: rec.StartOnly, Managed: true}
 	}
 	if a.Google.Active() {
 		for _, name := range a.Google.Users {
@@ -94,6 +98,9 @@ func (a *App) userList(self string) []userView {
 		v.Self = v.Username == self
 		if v.Games == nil {
 			v.Games = []string{}
+		}
+		if v.StartOnly == nil {
+			v.StartOnly = []string{}
 		}
 		v.MFA = a.MFA != nil && a.MFA.Enabled(v.Username)
 		out = append(out, *v)
@@ -363,6 +370,24 @@ func (a *App) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 				changes = append(changes, "games: all")
 			} else {
 				changes = append(changes, "games "+strings.Join(list, "/"))
+			}
+		}
+	}
+	if b.StartOnly != nil {
+		list, err := a.checkGames(*b.StartOnly)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if !slices.Equal(list, rec.StartOnly) {
+			if err := auth.SetStartOnly(path, name, list); err != nil {
+				http.Error(w, "could not save user", http.StatusInternalServerError)
+				return
+			}
+			if len(list) == 0 {
+				changes = append(changes, "start-only: none")
+			} else {
+				changes = append(changes, "start-only "+strings.Join(list, "/"))
 			}
 		}
 	}

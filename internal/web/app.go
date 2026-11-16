@@ -526,6 +526,11 @@ func (a *App) canSee(r *http.Request, id string) bool {
 	return a.Auth.Sessions.CanAccessGame(actor(r), id)
 }
 
+// canStop reports whether r's user may stop game id (see auth.UserRecord.StartOnly).
+func (a *App) canStop(r *http.Request, id string) bool {
+	return a.Auth.Sessions.CanStopGame(actor(r), id)
+}
+
 // visibleGames is the registry's games r's user may see, in registry order.
 func (a *App) visibleGames(r *http.Request) []games.GameDef {
 	defs := a.Registry.All()

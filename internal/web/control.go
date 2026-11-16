@@ -73,9 +73,17 @@ func (a *App) handleStart(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, publicError(err), http.StatusBadGateway)
 }
 
+// errStartOnly is the reply when a start-only player tries to stop a game.
+const errStartOnly = "You can start this game but not stop it. Ask an admin."
+
 func (a *App) handleStop(w http.ResponseWriter, r *http.Request) {
 	d, ok := a.gameOr404(w, r)
 	if !ok {
+		return
+	}
+	if !a.canStop(r, d.ID) {
+		audit.Printf("%s stop %s refused: start-only", actor(r), d.ID)
+		http.Error(w, errStartOnly, http.StatusForbidden)
 		return
 	}
 	// Accepted, not finished: the stop runs in the background (a save can
@@ -113,6 +121,12 @@ func (a *App) handleSwitch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	from := fromDef.ID
+	// A switch stops the game it leaves, so it needs the same right as a stop.
+	if !a.canStop(r, from) {
+		audit.Printf("%s switch %q->%q refused: start-only", actor(r), from, to.ID)
+		http.Error(w, errStartOnly, http.StatusForbidden)
+		return
+	}
 	if err := a.Exclusivity.RequestSwitch(exclusivity.WithActor(r.Context(), actor(r)), from, to.ID); err != nil {
 		audit.Printf("%s switch %q->%q failed: %v", actor(r), from, to.ID, err)
 		var busy *exclusivity.BusyError
