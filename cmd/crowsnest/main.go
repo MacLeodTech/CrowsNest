@@ -52,6 +52,10 @@ func main() {
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
 	}
+	switch cmd {
+	case "set-password", "clear-password", "set-role", "set-games", "set-start-only", "revoke-sessions", "enable-password-login", "doctor":
+		prepareUsersVault()
+	}
 
 	switch cmd {
 	case "serve":
@@ -266,6 +270,12 @@ func serve() error {
 			filepath.Join(filepath.Dir(cfg.Server.SessionSecretFile), "master.key"), vault.EnvKey)
 	}
 
+	auth.SetUsersVault(vlt)
+	if sealed, err := auth.SealUsersFile(cfg.UsersFile); err != nil {
+		return fmt.Errorf("encrypt users file: %w", err)
+	} else if sealed {
+		log.Printf("users file %s is now encrypted", cfg.UsersFile)
+	}
 	userStore, err := auth.NewUserStore(cfg.UsersFile)
 	if err != nil {
 		return fmt.Errorf("load users: %w", err)
@@ -779,6 +789,26 @@ func setRole(username, roleName string) error {
 	}
 	fmt.Printf("%s is now %s (a running server picks this up within a few seconds)\n", strings.ToLower(username), role)
 	return nil
+}
+
+// prepareUsersVault lets a command that reads or writes the users file open it when it is encrypted. The key
+// is CROWSNEST_MASTER_KEY or the master.key file the server keeps beside the session secret; with neither, nothing
+// was ever sealed, so the file is plain text and the command just works on it (and never makes a key itself).
+func prepareUsersVault() {
+	cfg, err := config.Load(configPath())
+	if err != nil {
+		return // the command reports a config that does not load
+	}
+	keyFile := filepath.Join(filepath.Dir(cfg.Server.SessionSecretFile), "master.key")
+	if _, err := os.Stat(keyFile); os.Getenv(vault.EnvKey) == "" && err != nil {
+		return
+	}
+	v, err := vault.New(os.Getenv(vault.EnvKey), keyFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "master key:", err)
+		os.Exit(1)
+	}
+	auth.SetUsersVault(v)
 }
 
 // setGames implements `crowsnest set-games <username> [game-id,game-id,...]`:
