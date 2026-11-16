@@ -4,6 +4,11 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Per-user game allowlist from the command line
+
+- [x] **`crowsnest set-games <user> [ids]` (done 2026-11-16).** Limits a user to the listed games, or with no list
+  lifts the limit. It uses the same stored allowlist as the Users tab, and a running server picks it up within seconds.
+
 ## Guard image (R24)
 
 - [x] **The guard runs its own minimal image (done 2026-11-16, v0.16.9).** `ghcr.io/<owner>/crowsnest-guard` is the

@@ -162,12 +162,24 @@ func main() {
 		if err := setRole(os.Args[2], os.Args[3]); err != nil {
 			log.Fatal(err)
 		}
+	case "set-games":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "usage: crowsnest set-games <username> [game-id,game-id,...]  (no list: allow every game)")
+			os.Exit(2)
+		}
+		list := ""
+		if len(os.Args) > 3 {
+			list = os.Args[3]
+		}
+		if err := setGames(os.Args[2], list); err != nil {
+			log.Fatal(err)
+		}
 	case "enable-password-login":
 		if err := enablePasswordLogin(); err != nil {
 			log.Fatal(err)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (want: serve, doctor, module, execguard, guard, healthcheck, set-password, set-role, revoke-sessions, enable-password-login)\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command %q (want: serve, doctor, module, execguard, guard, healthcheck, set-password, set-role, set-games, revoke-sessions, enable-password-login)\n", cmd)
 		os.Exit(2)
 	}
 }
@@ -753,6 +765,29 @@ func setRole(username, roleName string) error {
 		return err
 	}
 	fmt.Printf("%s is now %s (a running server picks this up within a few seconds)\n", strings.ToLower(username), role)
+	return nil
+}
+
+// setGames implements `crowsnest set-games <username> [game-id,game-id,...]`:
+// limits a user to the listed games, or with no list lifts the limit. A running
+// server picks the change up within a few seconds.
+func setGames(username, list string) error {
+	ids, err := auth.ParseGameList(list)
+	if err != nil {
+		return err
+	}
+	cfg, err := config.Load(configPath())
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	if err := auth.SetGames(cfg.UsersFile, username, ids); err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		fmt.Printf("%s may now use every game\n", strings.ToLower(username))
+	} else {
+		fmt.Printf("%s is now limited to: %s (a running server picks this up within a few seconds)\n", strings.ToLower(username), strings.Join(ids, ", "))
+	}
 	return nil
 }
 

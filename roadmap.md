@@ -51,7 +51,10 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
   production Palworld container (the real-Docker CI test covers exec through the guard with a busybox image only).
   Done on the test stack 2026-11-16 with Minecraft (start, stop, backup, file edit with history); that found the
   guard needs the modules folder mounted for an installed module's backup (#48). What is left is the same run on
-  production, which needs a sign-in.
+  production, which needs a sign-in. Prod Palworld is a `config.yaml` game, which has no `files:`, so the file-edit
+  step does not apply there: check start, stop and backup only. Decided 2026-11-16 not to add `files:` to
+  `config.yaml` games: Palworld's image rebuilds `PalWorldSettings.ini` from the environment on every start, so
+  editing it needs `DISABLE_GENERATE_SETTINGS=true`, which turns off the compose settings, for little gain.
 - [ ] **Try passkeys in a real browser** (Windows Hello, a phone, a security key): the server side is tested with a software authenticator only.
 - [ ] **Track C checks against real servers:** idle and night auto-stop with Discord notices, the Windrose
   invite-code join, crash-loop detection against a container that really crashes, and each restore command on a
@@ -78,7 +81,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### B. Accounts and settings (open)
 
-- [ ] **Per-user permissions:** a CLI command for the game allowlist, and per-game *actions* (may start, not stop).
+- [ ] **Per-user permissions:** per-game *actions* (may start, not stop).
 - [ ] **Profile page:** email/avatar, naming a device, an admin view of other people's sessions, and showing the
   new sign-in notice beyond the Account page (dashboard banner, Discord; see R19).
 - [ ] **Sign-in:** editing the `name=email`

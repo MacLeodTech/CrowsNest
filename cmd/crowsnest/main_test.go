@@ -271,6 +271,38 @@ func TestSetRole(t *testing.T) {
 	}
 }
 
+func TestSetGames(t *testing.T) {
+	cfgPath := writeTestConfig(t, ":5000")
+	t.Setenv("CROWSNEST_CONFIG", cfgPath)
+	withStdin(t, "hunter2\n")
+	if err := setPassword("alice"); err != nil {
+		t.Fatal(err)
+	}
+	load := func() auth.UserRecord {
+		cfg, _ := config.Load(cfgPath)
+		users, _ := auth.LoadUsers(cfg.UsersFile)
+		return users["alice"]
+	}
+	if err := setGames("Alice", "palworld,valheim"); err != nil {
+		t.Fatalf("setGames: %v", err)
+	}
+	if r := load(); len(r.Games) != 2 || r.Games[0] != "palworld" || r.Hash == "" {
+		t.Fatalf("alice = %+v, want palworld and valheim with the password kept", r)
+	}
+	if err := setGames("alice", ""); err != nil {
+		t.Fatalf("clearing: %v", err)
+	}
+	if r := load(); len(r.Games) != 0 {
+		t.Fatalf("games = %v, want none (every game)", r.Games)
+	}
+	if err := setGames("nobody", "palworld"); err == nil {
+		t.Fatal("setGames accepted an unknown user")
+	}
+	if err := setGames("alice", "Bad Name!"); err == nil {
+		t.Fatal("setGames accepted an invalid game id")
+	}
+}
+
 func TestProbeURL(t *testing.T) {
 	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }))
 	defer ok.Close()
