@@ -385,3 +385,37 @@ func TestAdminSeesAndEndsAnotherUsersSessions(t *testing.T) {
 		t.Errorf("player revoke = %d, want 403", rec.Code)
 	}
 }
+
+func TestProfile_NameADevice(t *testing.T) {
+	h, _, otherID := profileHarness(t)
+	body, _ := json.Marshal(map[string]string{"id": otherID, "label": "  Work laptop "})
+	if rec := h.do(h.authedReq(http.MethodPost, "/api/account/sessions/rename", body)); rec.Code != 200 {
+		t.Fatalf("rename = %d %s", rec.Code, rec.Body)
+	}
+	var v profileView
+	rec := h.do(h.req(http.MethodGet, "/api/account/profile", nil))
+	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, s := range v.Sessions {
+		if s.ID == otherID {
+			found = s.Label == "Work laptop"
+		}
+	}
+	if !found {
+		t.Errorf("label not shown: %+v", v.Sessions)
+	}
+	long, _ := json.Marshal(map[string]string{"id": otherID, "label": strings.Repeat("x", 41)})
+	if rec := h.do(h.authedReq(http.MethodPost, "/api/account/sessions/rename", long)); rec.Code != http.StatusBadRequest {
+		t.Errorf("long name = %d", rec.Code)
+	}
+	// Someone else's device cannot be named.
+	sm := h.App.Auth.Sessions
+	victim, _ := sm.New("friend")
+	_ = sm.Registry.Add(auth.SessionRecord{ID: victim.ID, User: "friend", Created: victim.IssuedAt, LastSeen: victim.IssuedAt, Expires: victim.ExpiresAt})
+	other, _ := json.Marshal(map[string]string{"id": victim.ID, "label": "mine now"})
+	if rec := h.do(h.authedReq(http.MethodPost, "/api/account/sessions/rename", other)); rec.Code != http.StatusNotFound {
+		t.Errorf("naming another user's device = %d", rec.Code)
+	}
+}

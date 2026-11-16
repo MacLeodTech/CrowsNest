@@ -4,6 +4,15 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Name your devices; YAML and XML checks in the file editor
+
+- [x] **Devices can be named (done 2026-11-16).** A **Rename** button on each device in the Account page sets a short
+  name ("Work laptop", up to 40 characters) that replaces the browser description in your list and in the admin
+  Devices view. It is kept with the session and goes when the session ends.
+- [x] **The file editor checks `.yaml`, `.yml` and `.xml` too (done 2026-11-16).** Like `.json`, a file with a
+  syntax error is refused with the line in the message. INI, `.properties` and plain lists have no strict grammar
+  and are not checked.
+
 ## Doctor: backups folder must be a real mount
 
 - [x] **`doctor` warns when the backups folder is not a bind mount (done 2026-11-16).** It reads

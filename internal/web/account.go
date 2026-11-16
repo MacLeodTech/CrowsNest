@@ -316,6 +316,7 @@ type profileSession struct {
 	Created   string `json:"created"`
 	LastSeen  string `json:"last_seen"`
 	UserAgent string `json:"user_agent,omitempty"`
+	Label     string `json:"label,omitempty"`
 }
 
 type signInNotice struct {
@@ -381,7 +382,7 @@ func (a *App) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 		v.PerDevice = true
 		for _, rec := range reg.List(session.Username) {
 			v.Sessions = append(v.Sessions, profileSession{ID: rec.ID, Current: rec.ID == session.ID, Device: describeDevice(rec.UserAgent),
-				IP: rec.IP, Created: rec.Created.UTC().Format(time.RFC3339), LastSeen: rec.LastSeen.UTC().Format(time.RFC3339), UserAgent: rec.UserAgent})
+				IP: rec.IP, Created: rec.Created.UTC().Format(time.RFC3339), LastSeen: rec.LastSeen.UTC().Format(time.RFC3339), UserAgent: rec.UserAgent, Label: rec.Label})
 		}
 	}
 	writeJSON(w, http.StatusOK, v)
@@ -407,6 +408,36 @@ func (a *App) handleSetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"display_name": a.Profiles.DisplayName(actor(r))})
+}
+
+// handleRenameSession names one of the caller's own devices ({"id": "...", "label": "Work laptop"}; "" clears it).
+func (a *App) handleRenameSession(w http.ResponseWriter, r *http.Request) {
+	session, _ := auth.FromContext(r.Context())
+	reg := a.Auth.Sessions.Registry
+	if reg == nil {
+		http.NotFound(w, r)
+		return
+	}
+	var body struct {
+		ID    string `json:"id"`
+		Label string `json:"label"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&body); err != nil {
+		http.Error(w, "invalid request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	ok, err := reg.SetLabel(session.Username, body.ID, body.Label)
+	switch {
+	case err != nil:
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	case !ok:
+		http.Error(w, "no such device", http.StatusNotFound)
+	default:
+		writeJSON(w, http.StatusOK, map[string]string{"label": strings.TrimSpace(body.Label)})
+	}
 }
 
 // handleRevokeSession signs out one device ({"id": "..."}), or every other device ({"others": true}), or every

@@ -9,13 +9,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Spec is one editable file of a game, as the module declares it.
@@ -155,15 +160,28 @@ func CheckText(b []byte) error {
 	return nil
 }
 
-// ErrInvalidJSON is returned when a .json file would be saved with a syntax error.
-var ErrInvalidJSON = errors.New("invalid JSON")
+// ErrInvalidSyntax is returned when a .json, .yaml, .yml or .xml file would be saved with a syntax error.
+var ErrInvalidSyntax = errors.New("invalid syntax")
 
-// CheckSyntax refuses content that cannot be what the file's name says it is. Only .json is checked: a game that
-// reads JSON stops at the first typo, so catching it here saves a crash loop. Anything else passes.
+// CheckSyntax refuses content that cannot be what the file's name says it is. Only JSON, YAML and XML are checked:
+// a game that reads one of these stops at the first typo, so catching it here saves a crash loop. Other formats
+// (INI, .properties, plain lists) have no strict grammar and pass.
 func (s Spec) CheckSyntax(content string) error {
-	if !strings.HasSuffix(strings.ToLower(s.Path), ".json") || strings.TrimSpace(content) == "" {
+	if strings.TrimSpace(content) == "" {
 		return nil
 	}
+	switch strings.ToLower(path.Ext(s.Path)) {
+	case ".json":
+		return checkJSON(content)
+	case ".yaml", ".yml":
+		return checkYAML(content)
+	case ".xml":
+		return checkXML(content)
+	}
+	return nil
+}
+
+func checkJSON(content string) error {
 	var v any
 	err := json.Unmarshal([]byte(content), &v)
 	var se *json.SyntaxError
@@ -179,9 +197,39 @@ func (s Spec) CheckSyntax(content string) error {
 				col++
 			}
 		}
-		return fmt.Errorf("%w: %s (line %d, column %d)", ErrInvalidJSON, se.Error(), line, col)
+		return fmt.Errorf("%w in JSON: %s (line %d, column %d)", ErrInvalidSyntax, se.Error(), line, col)
 	default:
-		return fmt.Errorf("%w: %s", ErrInvalidJSON, err.Error())
+		return fmt.Errorf("%w in JSON: %s", ErrInvalidSyntax, err.Error())
+	}
+}
+
+func checkYAML(content string) error {
+	dec := yaml.NewDecoder(strings.NewReader(content))
+	for {
+		var n yaml.Node
+		err := dec.Decode(&n)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%w in YAML: %s", ErrInvalidSyntax, strings.TrimPrefix(err.Error(), "yaml: "))
+		}
+	}
+}
+
+func checkXML(content string) error {
+	dec := xml.NewDecoder(strings.NewReader(content))
+	dec.Strict = true
+	// Entities such as &nbsp; that are not declared in the file would otherwise fail a file the game accepts.
+	dec.Entity = xml.HTMLEntity
+	for {
+		_, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%w in XML: %s", ErrInvalidSyntax, err.Error())
+		}
 	}
 }
 

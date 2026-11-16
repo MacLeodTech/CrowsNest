@@ -37,7 +37,7 @@ Using the panel renews it (an open, visible dashboard counts: it checks in every
 maximum to no more than the idle time to turn renewal off and get a fixed lifetime. The server also keeps a list of live sessions
 (`sessions.json` next to `settings.json`: an id, device, address and times; nothing in it can sign anyone in). There's
 no "remember me": you log in again once it expires. Anyone with a password can change it on the **Account** page (it asks for the current one and signs their other devices out). Every signed-in person can see their own devices on the
-**Account** page, sign out one device, every other device, or everywhere, and set a display name (shown in the top
+**Account** page, sign out one device, every other device, or everywhere, give a device a name, and set a display name (shown in the top
 bar; the sign-in name stays what the audit log and permissions use). A restart keeps people signed in. Sessions
 made before this list existed (a cookie with no session id) are ended once on upgrade. An admin can still revoke all
 of a user's sessions from the command line with `docker compose exec crowsnest crowsnest revoke-sessions <username>`. It edits the users file,

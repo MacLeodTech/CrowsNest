@@ -308,13 +308,33 @@ func TestCheckSyntax(t *testing.T) {
 		t.Errorf("an empty file is allowed: %v", err)
 	}
 	err := js.CheckSyntax("{\n  \"a\": 1,\n  \"b\": ,\n}")
-	if !errors.Is(err, ErrInvalidJSON) || !strings.Contains(err.Error(), "line 3") {
-		t.Errorf("syntax error = %v, want ErrInvalidJSON on line 3", err)
+	if !errors.Is(err, ErrInvalidSyntax) || !strings.Contains(err.Error(), "line 3") {
+		t.Errorf("syntax error = %v, want ErrInvalidSyntax on line 3", err)
 	}
-	if err := js.CheckSyntax("{\"a\": 1"); !errors.Is(err, ErrInvalidJSON) {
+	if err := js.CheckSyntax("{\"a\": 1"); !errors.Is(err, ErrInvalidSyntax) {
 		t.Errorf("truncated json = %v", err)
 	}
 	if err := (Spec{Path: "/data/server.properties"}).CheckSyntax("{not json"); err != nil {
 		t.Errorf("non-json files are not checked: %v", err)
+	}
+}
+
+func TestCheckSyntaxYAMLAndXML(t *testing.T) {
+	y := Spec{Path: "/data/settings.yaml"}
+	if err := y.CheckSyntax("a: 1\nb:\n  - x\n---\nc: 2\n"); err != nil {
+		t.Errorf("valid yaml refused: %v", err)
+	}
+	if err := y.CheckSyntax("a: 1\n b: [unclosed\n"); !errors.Is(err, ErrInvalidSyntax) {
+		t.Errorf("bad yaml = %v", err)
+	}
+	if err := (Spec{Path: "/x/a.YML"}).CheckSyntax("a: b: c"); !errors.Is(err, ErrInvalidSyntax) {
+		t.Errorf("bad yml = %v", err)
+	}
+	x := Spec{Path: "/data/serverconfig.xml"}
+	if err := x.CheckSyntax("<?xml version=\"1.0\"?>\n<ServerSettings>\n  <property name=\"A\" value=\"1\"/>\n</ServerSettings>\n"); err != nil {
+		t.Errorf("valid xml refused: %v", err)
+	}
+	if err := x.CheckSyntax("<a><b></a>"); !errors.Is(err, ErrInvalidSyntax) || !strings.Contains(err.Error(), "line 1") {
+		t.Errorf("bad xml = %v", err)
 	}
 }

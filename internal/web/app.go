@@ -288,6 +288,7 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.Handle("POST /api/account/profile", a.requireSessionAndCSRF(http.HandlerFunc(a.handleSetProfile)))
 	mux.Handle("POST /api/account/sign-in-notice/dismiss", a.requireSessionAndCSRF(http.HandlerFunc(a.handleDismissSignIn)))
 	mux.Handle("POST /api/account/sessions/revoke", a.requireSessionAndCSRF(http.HandlerFunc(a.handleRevokeSession)))
+	mux.Handle("POST /api/account/sessions/rename", a.requireSessionAndCSRF(http.HandlerFunc(a.handleRenameSession)))
 	mux.Handle("GET /api/account/security", a.requireSession(http.HandlerFunc(a.handleGetSecurity)))
 	mux.Handle("GET /api/account/passkeys", a.requireSession(http.HandlerFunc(a.handleListPasskeys)))
 	mux.Handle("POST /api/account/passkeys/begin", a.requireSessionAndCSRF(http.HandlerFunc(a.handlePasskeyBegin)))

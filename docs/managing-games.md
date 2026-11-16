@@ -80,7 +80,7 @@ banned lists), admins get a **Files** tab on its card. Pick a file, edit it and 
 - **A change usually needs a restart.** The note under the editor says what the module says. Some games rewrite
   their files when they stop (marked `stop_first`); the editor then says to edit while the game is stopped, which
   the helper container allows. **Save and restart** saves, stops the game, waits for it to stop and starts it again
-  (it asks first, because players are disconnected). A `.json` file is checked as you type and the server refuses to
+  (it asks first, because players are disconnected). A `.json` file is checked as you type, and `.yaml`, `.yml` and `.xml` files are checked when you save. The server refuses to
   save one with a syntax error, naming the line and column.
 - Only text files up to the file's limit (64 KiB by default) are editable. The file keeps its owner and mode.
 
