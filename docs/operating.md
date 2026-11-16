@@ -2,7 +2,7 @@
 
 How games start, stop and shut down by themselves, what the settings do, and what the activity log, metrics, admin console and join details show.
 
-Back to the [README](../README.md).
+Back to the [README](../README.md). To check a new release against real servers, follow [live checks](live-checks.md).
 
 ## One server at a time
 
