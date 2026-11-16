@@ -10,7 +10,8 @@ Newest first within each part. Design detail for the modular-games rework is in
   (the command) and the new `restore_binds` (the folders the helper mounts, which must hold `dir`). The helper
   `<id>-restore` runs in the image of the game's own container, with those folders and no network, and the
   guard scope for it is written by the operator (see `docs/backups.md`). The chosen file is checked over exec while
-  the game runs. Tested with a fake engine; not yet run against the production Palworld container.
+  the game runs. Tested with a fake engine and for real on the test stack (a Debian game container behind the guard with a
+  `<id>-restore` scope: backup, restore of a running and of a stopped game, refusals); not yet run on production Palworld.
 - [x] **Fixed a flaky guard test** that wrote its watched files non-atomically.
 
 ## Name your devices; YAML and XML checks in the file editor
