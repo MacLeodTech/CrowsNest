@@ -46,10 +46,12 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 - [x] **Try the signed-module Allow switch on a real guard.** Done 2026-11-16 on the test stack in a browser: installed
   Minecraft from the public URL, switched it on, added its image to `policy.yaml` on the host, added the game, started
   and stopped it (healthy on the chosen port). Rough edge found: a game whose first image pull the guard refused
-  stays `failed` with a stale error, and neither "Update image" nor "Settings" retries it; the way out is Disable
-  and add it again. Worth a "Retry" on a failed card, or re-running the pull when the policy changes.
+  stays `failed`; Update image does re-run it, so the card now says **Retry install** (#47).
 - [ ] **Try Phase 6 on the real host:** start, stop, backup and a config-file edit through the guard against the
   production Palworld container (the real-Docker CI test covers exec through the guard with a busybox image only).
+  Done on the test stack 2026-11-16 with Minecraft (start, stop, backup, file edit with history); that found the
+  guard needs the modules folder mounted for an installed module's backup (#48). What is left is the same run on
+  production, which needs a sign-in.
 - [ ] **Try passkeys in a real browser** (Windows Hello, a phone, a security key): the server side is tested with a software authenticator only.
 - [ ] **Track C checks against real servers:** idle and night auto-stop with Discord notices, the Windrose
   invite-code join, crash-loop detection against a container that really crashes, and each restore command on a
