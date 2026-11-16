@@ -4,6 +4,12 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Per-game actions: start but not stop
+
+- [x] **A player can be start-only for chosen games (done 2026-11-16).** `<USER>_START_ONLY=game,game` in the users
+  file, `crowsnest set-start-only <user> [ids]`, and a checkbox group on the Users tab. For those games the stop
+  and the switch-away calls answer 403, and the dashboard hides Stop. Admins are exempt; auto-stop is not affected.
+
 ## Per-user game allowlist from the command line
 
 - [x] **`crowsnest set-games <user> [ids]` (done 2026-11-16).** Limits a user to the listed games, or with no list

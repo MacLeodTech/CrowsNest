@@ -303,6 +303,39 @@ func TestSetGames(t *testing.T) {
 	}
 }
 
+func TestSetStartOnly(t *testing.T) {
+	cfgPath := writeTestConfig(t, ":5000")
+	t.Setenv("CROWSNEST_CONFIG", cfgPath)
+	withStdin(t, "hunter2\n")
+	if err := setPassword("alice"); err != nil {
+		t.Fatal(err)
+	}
+	if err := setRole("alice", "player"); err != nil {
+		t.Fatal(err)
+	}
+	load := func() auth.UserRecord {
+		cfg, _ := config.Load(cfgPath)
+		users, _ := auth.LoadUsers(cfg.UsersFile)
+		return users["alice"]
+	}
+	if err := setStartOnly("Alice", "palworld"); err != nil {
+		t.Fatalf("setStartOnly: %v", err)
+	}
+	r := load()
+	if len(r.StartOnly) != 1 || r.StartOnly[0] != "palworld" || r.Hash == "" {
+		t.Fatalf("alice = %+v, want start-only palworld with the password kept", r)
+	}
+	if r.CanStop("palworld") || !r.CanStop("valheim") {
+		t.Fatalf("CanStop wrong for %+v", r)
+	}
+	if err := setStartOnly("alice", ""); err != nil || len(load().StartOnly) != 0 {
+		t.Fatalf("clearing: %v, %v", err, load().StartOnly)
+	}
+	if err := setStartOnly("nobody", "palworld"); err == nil {
+		t.Fatal("accepted an unknown user")
+	}
+}
+
 func TestProbeURL(t *testing.T) {
 	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }))
 	defer ok.Close()

@@ -187,6 +187,75 @@ func TestGameAllowlistHidesGames(t *testing.T) {
 	}
 }
 
+func TestStartOnlyBlocksStopAndSwitchAway(t *testing.T) {
+	h := newHarness(t, nil, "palworld", "valheim")
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.mux().ServeHTTP(rec, h.authedReq(method, path, []byte(body)))
+		return rec
+	}
+	h.App.Auth.Sessions.Users = auth.Users{"tester": {Role: auth.RolePlayer, StartOnly: []string{"palworld"}}}
+	if rec := do("POST", "/api/games/palworld/stop", ""); rec.Code != http.StatusForbidden {
+		t.Errorf("stop a start-only game = %d, want 403", rec.Code)
+	}
+	if rec := do("POST", "/api/games/valheim/switch", `{"from":"palworld"}`); rec.Code != http.StatusForbidden {
+		t.Errorf("switch away from a start-only game = %d, want 403", rec.Code)
+	}
+	if rec := do("POST", "/api/games/valheim/stop", ""); rec.Code == http.StatusForbidden {
+		t.Errorf("stop of a game not in the list = %d, want it allowed", rec.Code)
+	}
+	if rec := do("POST", "/api/games/palworld/start", ""); rec.Code == http.StatusForbidden {
+		t.Errorf("start of a start-only game = %d, want it allowed", rec.Code)
+	}
+	if rec := do("GET", "/", ""); !strings.Contains(rec.Body.String(), `stop-btn" type="button" hidden`) {
+		t.Error("the dashboard should hide Stop on a start-only game")
+	}
+	// Admins ignore the list.
+	h.App.Auth.Sessions.Users = auth.Users{"tester": {Role: auth.RoleAdmin, StartOnly: []string{"palworld"}}}
+	if rec := do("POST", "/api/games/palworld/stop", ""); rec.Code == http.StatusForbidden {
+		t.Errorf("admin stop = %d, want it allowed", rec.Code)
+	}
+}
+
+func TestUsersAPIStartOnly(t *testing.T) {
+	h := newHarness(t, nil, "palworld", "valheim")
+	path := filepath.Join(t.TempDir(), "users")
+	hash, _ := auth.HashPassword("whatever1")
+	if err := auth.SetUserHash(path, "tester", hash); err != nil {
+		t.Fatal(err)
+	}
+	store, _ := auth.NewUserStore(path)
+	h.App.Auth.Store = store
+	h.App.Auth.Sessions.Store = store
+	do := func(method, p, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.mux().ServeHTTP(rec, h.authedReq(method, p, []byte(body)))
+		return rec
+	}
+	if rec := do("POST", "/api/users", `{"username":"bob","password":"hunter22x"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec := do("PUT", "/api/users/bob", `{"start_only":["nope"]}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("unknown game = %d, want 400", rec.Code)
+	}
+	if rec := do("PUT", "/api/users/bob", `{"start_only":["palworld"]}`); rec.Code != http.StatusOK {
+		t.Fatalf("update = %d: %s", rec.Code, rec.Body.String())
+	}
+	var out struct{ Users []userView }
+	json.Unmarshal(do("GET", "/api/users", "").Body.Bytes(), &out)
+	for _, u := range out.Users {
+		if u.Username == "bob" && (len(u.StartOnly) != 1 || u.StartOnly[0] != "palworld") {
+			t.Fatalf("start_only = %v", u.StartOnly)
+		}
+	}
+	if rec := do("PUT", "/api/users/bob", `{"start_only":[]}`); rec.Code != http.StatusOK {
+		t.Fatalf("clear = %d", rec.Code)
+	}
+	if rec, _ := store.Lookup("bob"); len(rec.StartOnly) != 0 {
+		t.Errorf("start_only after clearing = %v", rec.StartOnly)
+	}
+}
+
 func TestUsersAPIGames(t *testing.T) {
 	h := newHarness(t, nil, "palworld", "valheim")
 	path := filepath.Join(t.TempDir(), "users")

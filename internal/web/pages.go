@@ -51,6 +51,9 @@ type dashboardGame struct {
 	ConnectNote    string
 	ConnectSecrets []games.ConnectSecret
 
+	// CanStop is false for a player who may start this game but not stop it.
+	CanStop bool
+
 	// HasBackup is true when a backup is configured and the viewer is an
 	// admin, which is the only role that sees the Backups panel.
 	HasBackup bool
@@ -109,6 +112,7 @@ func (a *App) handleDashboard(w http.ResponseWriter, r *http.Request) {
 			DisplayName: d.DisplayName,
 			Initial:     initialOf(d.DisplayName),
 			Status:      a.gameStatus(d, snap.Status).String(),
+			CanStop:     a.canStop(r, d.ID),
 
 			ConnectAddress: d.ConnectAddress,
 			ConnectNote:    d.ConnectNote,

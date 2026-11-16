@@ -89,6 +89,7 @@ const (
 	roleSuffix         = "_ROLE"
 	googleEmailSuffix  = "_GOOGLE_EMAIL"
 	gamesSuffix        = "_GAMES"
+	startOnlySuffix    = "_START_ONLY"
 	oidcEmailSuffix    = "_OIDC_EMAIL"
 )
 
@@ -119,6 +120,10 @@ type UserRecord struct {
 	// control only those. Empty means every game. Admins ignore it (see
 	// CanAccess).
 	Games []string
+
+	// StartOnly lists games this player may start but not stop, or switch
+	// away from. Admins ignore it (see CanStop).
+	StartOnly []string
 }
 
 // Users maps username (lowercased) to their stored record.
@@ -198,8 +203,17 @@ func LoadUsers(path string) (Users, error) {
 			rec := users[username]
 			rec.Games = games
 			users[username] = rec
+		case strings.HasSuffix(key, startOnlySuffix):
+			username := strings.ToLower(strings.TrimSuffix(key, startOnlySuffix))
+			games, err := ParseGameList(value)
+			if err != nil {
+				return nil, fmt.Errorf("auth: %s:%d: %w", path, lineNo, err)
+			}
+			rec := users[username]
+			rec.StartOnly = games
+			users[username] = rec
 		default:
-			return nil, fmt.Errorf("auth: %s:%d: key %q must end with %s, %s, %s, %s, %s or %s", path, lineNo, key, passwordHashSuffix, validAfterSuffix, roleSuffix, googleEmailSuffix, oidcEmailSuffix, gamesSuffix)
+			return nil, fmt.Errorf("auth: %s:%d: key %q must end with %s, %s, %s, %s, %s, %s or %s", path, lineNo, key, passwordHashSuffix, validAfterSuffix, roleSuffix, googleEmailSuffix, oidcEmailSuffix, gamesSuffix, startOnlySuffix)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -394,6 +408,29 @@ func SetGames(path, username string, games []string) error {
 	return writeUsers(path, existing)
 }
 
+// SetStartOnly sets (or, with none, clears) the games username may start but
+// not stop. The user must already have an entry.
+func SetStartOnly(path, username string, games []string) error {
+	list, err := ParseGameList(strings.Join(games, ","))
+	if err != nil {
+		return err
+	}
+	usersMu.Lock()
+	defer usersMu.Unlock()
+	existing, err := LoadUsers(path)
+	if err != nil {
+		return err
+	}
+	key := strings.ToLower(username)
+	rec, ok := existing[key]
+	if !ok {
+		return fmt.Errorf("auth: no such user %q in %s", username, path)
+	}
+	rec.StartOnly = list
+	existing[key] = rec
+	return writeUsers(path, existing)
+}
+
 // writeUsers rewrites path from scratch with entries sorted by username for
 // a stable diff.
 func writeUsers(path string, users Users) error {
@@ -420,6 +457,9 @@ func writeUsers(path string, users Users) error {
 		}
 		if len(rec.Games) > 0 {
 			fmt.Fprintf(&b, "%s%s=%s\n", strings.ToUpper(name), gamesSuffix, strings.Join(rec.Games, ","))
+		}
+		if len(rec.StartOnly) > 0 {
+			fmt.Fprintf(&b, "%s%s=%s\n", strings.ToUpper(name), startOnlySuffix, strings.Join(rec.StartOnly, ","))
 		}
 		if !rec.ValidAfter.IsZero() {
 			fmt.Fprintf(&b, "%s%s=%d\n", strings.ToUpper(name), validAfterSuffix, rec.ValidAfter.Unix())

@@ -238,24 +238,34 @@ loaders.users = () => {
   let oidcAvailable = false;
   const gamesBox = $("user-games");
   const gamesField = $("user-games-field");
+  const startOnlyBox = $("user-startonly");
+  const startOnlyField = $("user-startonly-field");
   let editing = null;
   let editingUser = null; // the row being edited, to tell what changed
   let googleEnabled = false;
   let gameRefs = [];
   const buildGames = () => {
-    gamesBox.replaceChildren();
-    gameRefs.forEach((g) => {
-      const l = document.createElement("label");
-      const c = document.createElement("input");
-      c.type = "checkbox";
-      c.value = g.id;
-      l.append(c, " " + g.name);
-      gamesBox.append(l);
+    [gamesBox, startOnlyBox].forEach((box) => {
+      box.replaceChildren();
+      gameRefs.forEach((g) => {
+        const l = document.createElement("label");
+        const c = document.createElement("input");
+        c.type = "checkbox";
+        c.value = g.id;
+        l.append(c, " " + g.name);
+        box.append(l);
+      });
     });
   };
   const pickedGames = () => [...gamesBox.querySelectorAll("input:checked")].map((c) => c.value);
   const setPicked = (ids) => gamesBox.querySelectorAll("input").forEach((c) => { c.checked = ids.includes(c.value); });
-  const syncGamesField = () => { gamesField.hidden = form.elements.role.value === "admin"; };
+  const pickedStartOnly = () => [...startOnlyBox.querySelectorAll("input:checked")].map((c) => c.value);
+  const setStartOnly = (ids) => startOnlyBox.querySelectorAll("input").forEach((c) => { c.checked = ids.includes(c.value); });
+  const syncGamesField = () => {
+    const admin = form.elements.role.value === "admin";
+    gamesField.hidden = admin;
+    startOnlyField.hidden = admin || !editing; // set on an existing user: the add form has no such field
+  };
   form.elements.role.addEventListener("change", syncGamesField);
   const showError = (msg) => { errorEl.textContent = msg; errorEl.hidden = !msg; };
 
@@ -276,6 +286,7 @@ loaders.users = () => {
     pwLabel.textContent = googleEnabled ? "Password (8+ characters, optional for Google users)" : "Password (8+ characters)";
     cancelEdit.hidden = true;
     setPicked([]);
+    setStartOnly([]);
     syncGamesField();
     showError("");
   };
@@ -290,6 +301,7 @@ loaders.users = () => {
     form.elements.google_email.value = u.google_email || "";
     form.elements.oidc_email.value = u.oidc_email || "";
     setPicked(u.games || []);
+    setStartOnly(u.start_only || []);
     syncGamesField();
     title.textContent = `Edit ${u.username}`;
     submit.textContent = "Save changes";
@@ -316,6 +328,7 @@ loaders.users = () => {
       const tags = document.createElement("span");
       tags.className = "user-tags";
       tags.textContent = [u.role, u.mfa ? "2FA" : "", u.role === "player" && u.games && u.games.length ? `games: ${u.games.join(", ")}` : "",
+        u.role === "player" && u.start_only && u.start_only.length ? `start only: ${u.start_only.join(", ")}` : "",
         u.google_email ? `google: ${u.google_email}` : (u.google ? "google" : ""), u.oidc_email ? `sso: ${u.oidc_email}` : "",
         u.has_password ? "" : "no password"].filter(Boolean).join(" · ");
       li.append(name, tags);
@@ -395,6 +408,7 @@ loaders.users = () => {
       if (!f.role.disabled) body.role = f.role.value;
       if (f.password.value) body.password = f.password.value;
       body.games = pickedGames();
+      if (!startOnlyField.hidden) body.start_only = pickedStartOnly();
       if (oidcAvailable) body.oidc_email = f.oidc_email.value.trim();
       if (googleEnabled) body.google_email = f.google_email.value.trim();
       users = await request(`/api/users/${encodeURIComponent(editing)}`, "PUT", body);
