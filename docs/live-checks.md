@@ -6,9 +6,14 @@ see. If a step fails, note the exact message and the time, then look at `docker 
 
 ## 0. Before you start
 
+Run `docker compose exec crowsnest crowsnest doctor` first. It checks Docker access, that each game's container
+exists, and which notification channels are on (a webhook variable that is named in `config.yaml` but empty in the
+container is the usual reason a notice never arrives). Fix what it flags before going further. The list below is what it
+does not cover.
+
 - **Version.** `docker compose images crowsnest` shows the tag the container runs. Compare it with the latest release.
-- **Containers exist.** CrowsNest only starts containers that already exist; it never creates them. For each game:
-  `docker ps -a --filter name=<container>` lists it, even if stopped. A missing one fails with
+- **Containers exist.** CrowsNest only starts containers that already exist; it never creates them, and doctor flags a
+  missing one. A game that is missing fails Start with
   `container "<name>" does not exist: create it on the host, or add the game from the dashboard`.
 - **Guard and exec rules.** `docker compose ps` shows the guard and execguard healthy. Backups and file reads run
   through exec, so a game whose backup is refused usually means the exec rule or the guard scope is missing.
@@ -40,8 +45,8 @@ for Palworld.
 
 ## 2. Idle auto-stop and the Discord notice
 
-Needs `DISCORD_WEBHOOK_URL` set in the CrowsNest environment (the panel does not show whether it is set, so confirm with
-`docker compose exec crowsnest printenv DISCORD_WEBHOOK_URL`, or just watch for the notice).
+Needs the webhook variable set (doctor's Notifications section says whether Discord is on; the panel itself does not
+show it).
 
 1. In Settings, set the idle timeout low (for example 2 minutes) for the game you are testing.
 2. Start the game and leave it empty.

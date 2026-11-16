@@ -11,9 +11,16 @@ import (
 	"github.com/macleodtech/crowsnest/internal/config"
 )
 
-type fakePing struct{ err error }
+type fakePing struct {
+	err error
+	// have names the containers that exist; a nil map means every container does.
+	have map[string]bool
+}
 
 func (f fakePing) Ping(context.Context) error { return f.err }
+func (f fakePing) Exists(_ context.Context, name string) (bool, error) {
+	return f.have == nil || f.have[name], nil
+}
 
 // doctorConfig is a config whose files all live under a fresh directory.
 func doctorConfig(t *testing.T) *config.Config {
@@ -139,5 +146,42 @@ func TestDoctor_BackupsFolder(t *testing.T) {
 	cfg.Platform.BackupsMount = filepath.Join(mount, "missing")
 	if code, out := run(); code != 1 || !strings.Contains(out, "is not a folder in the panel") {
 		t.Fatalf("not mounted: exit %d\n%s", code, out)
+	}
+}
+
+func TestDoctor_ContainersAndNotifications(t *testing.T) {
+	cfg := doctorConfig(t)
+	run := func(p fakePing) string {
+		var out strings.Builder
+		runDoctor(cfg, p, &out)
+		return out.String()
+	}
+
+	if out := run(fakePing{}); !strings.Contains(out, `windrose: container "windrose" exists`) {
+		t.Errorf("an existing container should be reported:\n%s", out)
+	}
+	out := run(fakePing{have: map[string]bool{}})
+	if !strings.Contains(out, `container "windrose" does not exist, so Start will fail`) || !strings.Contains(out, "--no-start") {
+		t.Errorf("a missing container should be reported with the fix:\n%s", out)
+	}
+
+	// No channel configured: say so.
+	if out := run(fakePing{}); !strings.Contains(out, "no notification channel is on") {
+		t.Errorf("no channel should be noted:\n%s", out)
+	}
+	// Named but unset: a warning that names the variable.
+	cfg.Notifications.DiscordWebhookURLEnv = "T_DOCTOR_HOOK"
+	t.Setenv("T_DOCTOR_HOOK", "")
+	if out := run(fakePing{}); !strings.Contains(out, "T_DOCTOR_HOOK is named in config.yaml but not set") {
+		t.Errorf("an unset webhook variable should be warned about:\n%s", out)
+	}
+	// Set: on.
+	t.Setenv("T_DOCTOR_HOOK", "https://discord.example/hook")
+	out = run(fakePing{})
+	if !strings.Contains(out, "Discord notices are on (T_DOCTOR_HOOK is set)") || strings.Contains(out, "no notification channel") {
+		t.Errorf("a set webhook should be reported as on:\n%s", out)
+	}
+	if strings.Contains(out, "discord.example") {
+		t.Errorf("the webhook URL is a secret and must not be printed:\n%s", out)
 	}
 }
