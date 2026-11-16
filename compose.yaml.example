@@ -170,7 +170,7 @@ services:
   # exact addresses that container may take on that network (the network must be in "networks"). Use it when
   # something outside Docker keys on the address, such as a firewall rule for a macvlan container.
   # guard:
-  #   image: ghcr.io/fiddler110/crowsnest:latest
+  #   image: ghcr.io/fiddler110/crowsnest-guard:latest   # the guard alone (static binary on scratch, no shell)
   #   container_name: dockerproxy-crowsnest
   #   command: ["guard", "--listen", ":2375"]
   #   restart: unless-stopped
@@ -186,7 +186,7 @@ services:
   #         "ports": [{"host_ip": "10.0.0.2", "host_port": "8211", "container_port": "8211", "proto": "udp"}],
   #         "labels": {"com.centurylinklabs.watchtower.enable": "false"}, "exec": true}]
   #   healthcheck:
-  #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2375/_ping"]
+  #     test: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock
   #     # With modules installed from a URL (modules_dir in config.yaml), also mount that folder read-only at the
