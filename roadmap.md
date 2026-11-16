@@ -82,9 +82,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 ### B. Accounts and settings (open)
 
 - [ ] **Profile page:** email/avatar, naming a device, and an admin view of other people's sessions.
-- [ ] **Sign-in:** editing the `name=email`
-  env allowlist,
-  encrypting the users file.
+- [ ] **Sign-in:** editing the `name=email` env allowlist.
 - [ ] **Backups:** a restore for config-file games; try each restore command on a real world; config-file games still back up
   inside their own data and would need the bind added by hand; an optional host-side mount check.
 - [ ] **File editing, next steps:** a Save-and-restart button, per-format validation (JSON first), and `files:` for

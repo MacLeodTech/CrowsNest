@@ -19,7 +19,7 @@ const NewKeyEnv = "CROWSNEST_NEW_MASTER_KEY"
 
 const rekeyUsage = `usage: crowsnest rekey
 
-Re-encrypts every sealed file (the session secret, Google and SSO client secrets, authenticator apps, the dashboard
+Re-encrypts every sealed file (the users file, the session secret, Google and SSO client secrets, authenticator apps, the dashboard
 games' passwords) under a new master key, or, with no new key, under the current key's newest scheme.
 
   1. Stop the panel.
@@ -56,6 +56,7 @@ func runRekey(out io.Writer) error {
 		run  func() (int, error)
 	}
 	jobs := []job{
+		{"users file", func() (int, error) { return auth.ResealUsers(cfg.UsersFile, from, to) }},
 		{"session secret", func() (int, error) { return auth.ResealSessionSecret(cfg.Server.SessionSecretFile, from, to) }},
 		{"Google sign-in secret", func() (int, error) { return auth.ResealGoogleConf(filepath.Join(settingsDir, "auth.json"), from, to) }},
 		{"SSO client secrets", func() (int, error) { return auth.ResealOIDC(filepath.Join(settingsDir, "oidc.json"), from, to) }},

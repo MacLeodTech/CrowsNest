@@ -4,6 +4,14 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## The users file is encrypted
+
+- [x] **The users file is sealed with the master key (done 2026-11-16).** The whole file is one AES-256-GCM value,
+  so names, roles, emails and hashes are hidden together, not only the hashes. Plain-text files still load and are
+  sealed at the next start; `crowsnest rekey` moves it to a new key. A process with no key, or the wrong one, refuses
+  with a clear message and never rewrites the file. Command-line commands open it with the same key and never create
+  one: with no key anywhere, the file is still plain.
+
 ## Require an authenticator app for players
 
 - [x] **Settings can require players to set up an authenticator app (done 2026-11-16).** Same rule as for admins,
