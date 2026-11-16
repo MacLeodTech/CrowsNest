@@ -26,7 +26,10 @@
       "LocalDir": "",
       "BeforeStop": true,
       "Keep": 0,
-      "CanRestore": false
+      "CanRestore": false,
+      "Dir": "/palworld/backups",
+      "RestoreCmd": null,
+      "RestoreBinds": null
     },
     "CanCountPlayers": true
   },
@@ -61,7 +64,10 @@
       "LocalDir": "",
       "BeforeStop": true,
       "Keep": 0,
-      "CanRestore": false
+      "CanRestore": false,
+      "Dir": "/config/backups",
+      "RestoreCmd": null,
+      "RestoreBinds": null
     },
     "CanCountPlayers": true
   },
@@ -96,7 +102,10 @@
       "LocalDir": "",
       "BeforeStop": true,
       "Keep": 0,
-      "CanRestore": false
+      "CanRestore": false,
+      "Dir": "/home/steam/server-files/backups",
+      "RestoreCmd": null,
+      "RestoreBinds": null
     },
     "CanCountPlayers": true
   }
