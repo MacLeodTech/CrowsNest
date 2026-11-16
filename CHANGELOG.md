@@ -4,6 +4,26 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Doctor: backups folder must be a real mount
+
+- [x] **`doctor` warns when the backups folder is not a bind mount (done 2026-11-16).** It reads
+  `/proc/self/mountinfo`; a plain folder inside the container would lose its backups when the container is recreated.
+  It stays quiet where mountinfo is unavailable.
+
+## File editor: Save and restart, JSON validation
+
+- [x] **Save and restart, and JSON checks (done 2026-11-16).** A **Save and restart** button appears for a running game
+  whose file needs a restart; it saves, stops, waits and starts again after a confirmation. `.json` files show a
+  syntax error live and the server refuses to write invalid JSON (line and column in the message), so a typo cannot
+  put a game in a crash loop. Module games only.
+
+## Admin view of other people's sessions
+
+- [x] **Admins can see and end a user's sessions (done 2026-11-16).** A **Devices** button on the Users tab lists each
+  signed-in device (browser, system, address, last seen) with a sign-out per device, over two admin-only endpoints.
+  An admin's own devices stay on their Account page (the endpoint refuses their own name). Each sign-out goes in the
+  activity log and the audit file.
+
 ## The users file is encrypted
 
 - [x] **The users file is sealed with the master key (done 2026-11-16).** The whole file is one AES-256-GCM value,

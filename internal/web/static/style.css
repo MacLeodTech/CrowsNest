@@ -683,3 +683,6 @@ fieldset.field legend { padding: 0; margin-bottom: 0.3rem; }
 .files-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 .files-versions { max-width: 14rem; font: 0.72rem var(--mono); }
 .files-versions:empty, .files-versions:empty + .files-load-version { display: none; }
+.user-devices { flex-basis: 100%; font-size: 0.85rem; color: var(--muted); }
+.user-devices li { display: flex; align-items: center; gap: 0.5rem; padding: 0.15rem 0; }
+.files-syntax { margin: 0.4rem 0 0; font: 0.75rem var(--mono); color: var(--danger, #e5484d); }

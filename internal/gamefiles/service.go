@@ -159,6 +159,9 @@ func (s *Service) Write(ctx context.Context, game, container string, sp Spec, co
 	if err := CheckText([]byte(real)); err != nil {
 		return "", err
 	}
+	if err := sp.CheckSyntax(real); err != nil {
+		return "", err
+	}
 	if real == cur {
 		return curHash, nil
 	}
