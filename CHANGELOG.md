@@ -4,6 +4,13 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Admin view of other people's sessions
+
+- [x] **Admins can see and end a user's sessions (done 2026-11-16).** A **Devices** button on the Users tab lists each
+  signed-in device (browser, system, address, last seen) with a sign-out per device, over two admin-only endpoints.
+  An admin's own devices stay on their Account page (the endpoint refuses their own name). Each sign-out goes in the
+  activity log and the audit file.
+
 ## The users file is encrypted
 
 - [x] **The users file is sealed with the master key (done 2026-11-16).** The whole file is one AES-256-GCM value,
