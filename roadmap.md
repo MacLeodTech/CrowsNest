@@ -25,17 +25,24 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 
 #### P0: do now (small, and each closes a real gap)
 
-- [ ] **R4 (ops). Upgrade production from 0.11.0 to the next release.** The operator's step: run `template-check.sh`,
-  compare compose and config, then pull and recreate. It signs everyone out once, and Minecraft, Source and
-  Don't Starve Together are no longer bundled. Phase 6 also needs the game containers (Palworld and any other
-  `config.yaml` game) created first with `docker compose --profile <game> up --no-start`, because the panel no
-  longer runs compose; `compose_*` and `auto_update` are ignored.
-- [ ] **R5 (ops). Finish the Phase 5 live checks on the test stack:** "Make a copy" in the browser, a positive
-  signed install from a public URL, the module-update diff, the offsite status banner, and Start→Switch from
-  the browser (track C).
+- [x] **R4 (ops). Upgrade production from 0.11.0 to 0.16.2.** Done 2026-11-16: template-check reconciled, game
+  containers created (`up --no-start`), master key added, panel, execguard and guard recreated and healthy.
+  Two things the upgrade needed that the templates don't say yet: `users.env` and the session secret must live in
+  the writable data folder (`users_file: /app/data/users.env`, `session_secret_file: /app/data/.session_secret`),
+  because 0.16 rewrites them through a temp file in the same directory and a single-file bind mount under a
+  read-only root fails (the panel crash-looped on "read-only file system"); and execguard now needs the
+  `policy` folder mounted too.
+- [x] **R5 (ops). Phase 5 live checks on the test stack:** done 2026-11-16 in a real browser: signed install of
+  Minecraft from the public crowsnest-modules URL, the module-update check and apply, "Make a copy" (valheim-copy
+  on ports 2466/2467), the offsite banner (failed shows, ok hides), and Start→Switch between two real games.
+  The update diff panel lists permission changes only, so a changed env value shows "nothing"; a game that was
+  failing for a missing module only recovers after a restart.
 
 #### P1: next (security design and data safety)
 
+- [ ] **Fix the templates for the bind-mount failure:** put `users.env` and the session secret in the data folder in
+  `compose.yaml.example`, `config.yaml.example` and `quickstart/`, mount `policy` into execguard, or make the writes
+  fall back to in-place when the file is a mount.
 - [ ] **Try the signed-module Allow switch on a real guard** (mount the modules folder, add a key to `policy.yaml`, install a signed module, switch it on, start it).
 - [ ] **Try Phase 6 on the real host:** start, stop, backup and a config-file edit through the guard against the
   production Palworld container (the real-Docker CI test covers exec through the guard with a busybox image only).
