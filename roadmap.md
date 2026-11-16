@@ -40,7 +40,7 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 
 #### P1: next (security design and data safety)
 
-- [ ] **Fix the templates for the bind-mount failure:** put `users.env` and the session secret in the data folder in
+- [x] **Fix the templates for the bind-mount failure (#44):** put `users.env` and the session secret in the data folder in
   `compose.yaml.example`, `config.yaml.example` and `quickstart/`, mount `policy` into execguard, or make the writes
   fall back to in-place when the file is a mount.
 - [ ] **Try the signed-module Allow switch on a real guard** (mount the modules folder, add a key to `policy.yaml`, install a signed module, switch it on, start it).
