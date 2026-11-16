@@ -4,6 +4,12 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Doctor: backups folder must be a real mount
+
+- [x] **`doctor` warns when the backups folder is not a bind mount (done 2026-11-16).** It reads
+  `/proc/self/mountinfo`; a plain folder inside the container would lose its backups when the container is recreated.
+  It stays quiet where mountinfo is unavailable.
+
 ## File editor: Save and restart, JSON validation
 
 - [x] **Save and restart, and JSON checks (done 2026-11-16).** A **Save and restart** button appears for a running game

@@ -248,6 +248,10 @@ func doctorBackups(r *doctorReport, cfg *config.Config) {
 		return
 	}
 	r.add(docOK, fmt.Sprintf("backups folder %s is writable", mount), "")
+	if mounted, known := isMountPoint(mount, "/proc/self/mountinfo"); known && !mounted {
+		r.add(docWarn, fmt.Sprintf("%s is not a bind mount: it is a plain folder inside the container, so backups there are lost when the container is recreated", mount),
+			"add ${BACKUPS_DIR}:"+mount+" to the crowsnest service's volumes (the host folder must exist before Docker starts)")
+	}
 	state := filepath.Join(filepath.Dir(cfg.Server.SettingsFile), "backups-root")
 	known, onDisk := readFirstLine(state), readFirstLine(filepath.Join(mount, ".crowsnest-backups"))
 	switch {
@@ -277,6 +281,23 @@ func doctorBackups(r *doctorReport, cfg *config.Config) {
 		r.add(docInfo, fmt.Sprintf("each game's backup folder is created with mode %04o", mode),
 			"if a game's own user is not the panel's, its backups fail with 'permission denied': chown the folder to that user, or set platform.backups_dir_mode: \"0777\"")
 	}
+}
+
+// isMountPoint reports whether path is a mount point, read from a mountinfo file (field 5 is the mount point).
+// known is false when the file cannot be read, so a platform without it raises no false alarm.
+func isMountPoint(path, mountinfo string) (mounted, known bool) {
+	b, err := os.ReadFile(mountinfo) // #nosec G304 -- a fixed /proc path, or a test file
+	if err != nil {
+		return false, false
+	}
+	want := filepath.Clean(path)
+	for _, line := range strings.Split(string(b), "\n") {
+		f := strings.Fields(line)
+		if len(f) > 4 && strings.ReplaceAll(f[4], `\040`, " ") == want {
+			return true, true
+		}
+	}
+	return false, true
 }
 
 func readFirstLine(path string) string {
