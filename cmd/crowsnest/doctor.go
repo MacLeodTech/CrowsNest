@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/hoststats"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/hoststats"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // Doctor levels. Only a failure makes `crowsnest doctor` exit non-zero.

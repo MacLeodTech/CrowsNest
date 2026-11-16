@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 // Request is one HTTP call a module declares. Body values and Path may use

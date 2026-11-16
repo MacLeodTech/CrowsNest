@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/hoststats"
-	"github.com/fiddler110/crowsnest/internal/statehub"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/hoststats"
+	"github.com/macleodtech/crowsnest/internal/statehub"
 )
 
 // CrashStats supplies per-game crash counts; satisfied by *crashwatch.Watcher.

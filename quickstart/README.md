@@ -28,7 +28,7 @@ then pick the admin username and passphrase. Then open **Games**, choose a game,
 ## Upgrading
 
 `.env` pins the release (`CROWSNEST_TAG`), so nothing changes under you. Read the
-[release notes](https://github.com/fiddler110/crowsnest/releases), then:
+[release notes](https://github.com/MacLeodTech/crowsnest/releases), then:
 
 ```sh
 sed -i 's/^CROWSNEST_TAG=.*/CROWSNEST_TAG=0.10.0/' .env     # the new version

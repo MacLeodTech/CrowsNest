@@ -48,7 +48,7 @@ name: crowsnest
 
 services:
   crowsnest:
-    image: ghcr.io/fiddler110/crowsnest:latest
+    image: ghcr.io/macleodtech/crowsnest:latest
     # Building from source instead (e.g. local changes):
     # build: .
     container_name: crowsnest
@@ -143,7 +143,7 @@ services:
   # (To avoid a second container, run the guard below with `--exec` instead: it serves this allowlist in
   # front of itself, in one process. It then needs config.yaml mounted, as execguard does. See quickstart/compose.yaml.)
   # execguard:
-  #   image: ghcr.io/fiddler110/crowsnest:latest
+  #   image: ghcr.io/macleodtech/crowsnest:latest
   #   container_name: crowsnest-execguard
   #   restart: unless-stopped
   #   command: ["execguard", "--listen", ":2375", "--upstream", "tcp://dockerproxy:2375"]
@@ -170,7 +170,7 @@ services:
   # exact addresses that container may take on that network (the network must be in "networks"). Use it when
   # something outside Docker keys on the address, such as a firewall rule for a macvlan container.
   # guard:
-  #   image: ghcr.io/fiddler110/crowsnest-guard:latest   # the guard alone (static binary on scratch, no shell)
+  #   image: ghcr.io/macleodtech/crowsnest-guard:latest   # the guard alone (static binary on scratch, no shell)
   #   container_name: dockerproxy-crowsnest
   #   command: ["guard", "--listen", ":2375"]
   #   restart: unless-stopped

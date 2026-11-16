@@ -26,11 +26,11 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files")

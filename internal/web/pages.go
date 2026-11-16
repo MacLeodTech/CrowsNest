@@ -3,9 +3,9 @@ package web
 import (
 	"net/http"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/statehub"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/statehub"
 )
 
 // loginPage is the login template's data. Error is one of a fixed set of

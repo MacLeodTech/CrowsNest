@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
 )
 
 // The Manager lets the files service edit a stopped dashboard game's declared files through a one-shot container

@@ -1,6 +1,6 @@
 # Publishing and security scanning
 
-The image is published to `ghcr.io/fiddler110/crowsnest` (public package) by
+The image is published to `ghcr.io/macleodtech/crowsnest` (public package) by
 `.github/workflows/publish.yml`.
 
 ## Automatic releases
@@ -22,7 +22,7 @@ Tags on every release: `:X.Y.Z`, `:X.Y`, `:latest`, `:sha-<short>`, and `:dev`
 ## Running a released image
 
 Point your compose file at
-`ghcr.io/fiddler110/crowsnest:${CROWSNEST_TAG}`. The quickstart requires `CROWSNEST_TAG` (its `.env.example` pins a
+`ghcr.io/macleodtech/crowsnest:${CROWSNEST_TAG}`. The quickstart requires `CROWSNEST_TAG` (its `.env.example` pins a
 release, and each release's `quickstart.tar.gz` pins itself). To update:
 
 ```sh
@@ -36,8 +36,8 @@ but keep it off the game containers. Their labels already opt them out.
 Verify a pulled image:
 
 ```sh
-cosign verify ghcr.io/fiddler110/crowsnest:<version> \
-  --certificate-identity-regexp 'https://github.com/fiddler110/CrowsNest/.*' \
+cosign verify ghcr.io/macleodtech/crowsnest:<version> \
+  --certificate-identity-regexp 'https://github.com/MacLeodTech/CrowsNest/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 

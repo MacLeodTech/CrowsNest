@@ -1,7 +1,7 @@
 // Package modtest registers test copies of modules that are no longer bundled (Minecraft, Source and Don't Starve
 // Together live in the crowsnest-modules repository now). Import it for its side effect from a test file:
 //
-//	import _ "github.com/fiddler110/crowsnest/internal/modules/modtest"
+//	import _ "github.com/macleodtech/crowsnest/internal/modules/modtest"
 //
 // The copies exercise the engine (log markers, RCON status, backups, restore); they are fixtures, not the published
 // modules, and are not compiled into the crowsnest binary.
@@ -11,7 +11,7 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 //go:embed mods/*/module.yaml

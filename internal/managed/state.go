@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/vault"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // List reports every managed game.

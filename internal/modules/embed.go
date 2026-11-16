@@ -7,7 +7,7 @@ import (
 	"io/fs"
 	"sync"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 //go:embed bundled/*/module.yaml

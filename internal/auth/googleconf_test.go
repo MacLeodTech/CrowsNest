@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 func TestGoogleConfStore(t *testing.T) {

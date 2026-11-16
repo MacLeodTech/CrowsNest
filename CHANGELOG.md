@@ -4,6 +4,13 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Moved to the MacLeodTech org
+
+- [x] **Images now publish to `ghcr.io/macleodtech/…` (2026-11-16).** The repo moved to the MacLeodTech org, whose
+  name is mixed-case; `cosign sign` rejects an uppercase registry reference, so `publish.yml` lowercases the image
+  names first. Compose files and docs point at the new path. Releases up to v0.16.9 stay under `ghcr.io/fiddler110/…`. The Go module path is now
+  `github.com/macleodtech/crowsnest`.
+
 ## Guard image (R24)
 
 - [x] **The guard runs its own minimal image (done 2026-11-16, v0.16.9).** `ghcr.io/<owner>/crowsnest-guard` is the
@@ -428,7 +435,7 @@ Newest first within each part. Design detail for the modular-games rework is in
 ## Earlier work
 
 - [x] **Modules moved out (2026-11-12).** Minecraft, Source and Don't Starve Together are no longer bundled; they are
-  published, signed, in [crowsnest-modules](https://github.com/fiddler110/crowsnest-modules) with `sevendtd`.
+  published, signed, in [crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules) with `sevendtd`.
   Valheim, Palworld and Windrose stay in the binary. The engine tests keep copies under
   `internal/modules/modtest/` (registered through `modules.AddBundled`, only in test binaries). Upgrade note in
   `docs/modules.md`.

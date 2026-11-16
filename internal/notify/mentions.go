@@ -9,7 +9,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 )
 
 type gameKey struct{}

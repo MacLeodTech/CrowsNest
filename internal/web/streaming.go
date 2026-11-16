@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/sse"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/sse"
 )
 
 // logKeepaliveInterval and startupKeepaliveInterval bound how long an SSE

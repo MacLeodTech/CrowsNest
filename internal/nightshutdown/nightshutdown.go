@@ -19,10 +19,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/notify"
-	"github.com/fiddler110/crowsnest/internal/statehub"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/notify"
+	"github.com/macleodtech/crowsnest/internal/statehub"
 )
 
 // Stopper stops a registered game by ID — satisfied directly by

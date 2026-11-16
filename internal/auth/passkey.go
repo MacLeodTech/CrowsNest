@@ -15,8 +15,8 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/audit"
 )
 
 // Passkeys (WebAuthn) are a sign-in method of their own: one touch or biometric on a device the person holds, with no

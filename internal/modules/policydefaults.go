@@ -3,7 +3,7 @@ package modules
 import (
 	"fmt"
 
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
 )
 
 // DefaultNetwork is the games network when platform.games_network is not set.

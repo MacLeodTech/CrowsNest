@@ -3,7 +3,7 @@
 A module tells CrowsNest how to read one kind of game server (status, players, startup progress, consoles).
 Three modules ship inside the binary (the bundled ones below); every other module is installed into `modules_dir` as
 `<id>/module.yaml` (same format), from your own file or from a source. Ready-made ones are published in
-[fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules).
+[MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules).
 A game in `config.yaml` uses the module whose id equals the game's `id`, or the one named by `module:`.
 
 | Module id | Covers | Players come from |
@@ -12,7 +12,7 @@ A game in `config.yaml` uses the module whose id equals the game's `id`, or the 
 | `palworld` | Palworld (thijsvanloef/palworld-server-docker) | REST API |
 | `windrose` | Windrose (+ optional Windrose+ mod) | container log, mod cross-check |
 
-Published in [fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules) (one signed folder each; see its README to install them):
+Published in [MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules) (one signed folder each; see its README to install them):
 
 | Module id | Covers | Players come from |
 |---|---|---|
@@ -133,7 +133,7 @@ summary lists every file path, because installing such a module lets admins over
 An optional `accent: "#rrggbb"` sets the colour of the game's dashboard card. Without one the card uses the
 default theme colour.
 
-Copy `minecraft/module.yaml` (log-based) or `source/module.yaml` (RCON-based) from [fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules) into
+Copy `minecraft/module.yaml` (log-based) or `source/module.yaml` (RCON-based) from [MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules) into
 `<modules_dir>/<id>/module.yaml`, change the regexes, and add the game to `config.yaml`. Unknown keys are an
 error, so a typo cannot silently disable a setting. Add a fixture of real log lines and test it the way
 `internal/modules/minecraft_test.go` does (its fixtures live in `internal/modules/modtest/`).

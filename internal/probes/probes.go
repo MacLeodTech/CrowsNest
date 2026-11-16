@@ -20,9 +20,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/rcon"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/rcon"
 )
 
 const timeout = 4 * time.Second

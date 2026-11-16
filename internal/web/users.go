@@ -3,7 +3,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/audit"
 	"io"
 	"log"
 	"net/http"
@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/history"
 )
 
 const (

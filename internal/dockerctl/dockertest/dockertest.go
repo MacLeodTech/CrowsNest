@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
 )
 
 // Container is one fake container.

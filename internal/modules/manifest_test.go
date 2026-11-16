@@ -1,14 +1,14 @@
 package modules
 
 import (
-	"github.com/fiddler110/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/config"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 const good = `

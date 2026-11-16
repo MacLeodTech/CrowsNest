@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 func TestRunState_ExportAndRestoreCLI(t *testing.T) {

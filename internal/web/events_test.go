@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
 )
 
 // A failed start leaves an error whose raw detail only admins may see.

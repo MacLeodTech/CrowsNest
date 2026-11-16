@@ -7,7 +7,7 @@ package games
 import (
 	"context"
 	"errors"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
 	"regexp"
 	"time"
 )

@@ -3,8 +3,8 @@ package games
 import (
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
 )
 
 func TestFromConfig_ConnectSecrets(t *testing.T) {

@@ -11,9 +11,9 @@ import (
 
 	"github.com/skip2/go-qrcode"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/mfa"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/mfa"
 )
 
 // totpIssuer is the name authenticator apps show for the account.

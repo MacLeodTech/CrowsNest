@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/modules"
 	"gopkg.in/yaml.v3"
 )
 

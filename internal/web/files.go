@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/history"
 )
 
 const maxFileBody = 2 << 20 // content plus JSON escaping of a file of at most gamefiles.AbsoluteMax

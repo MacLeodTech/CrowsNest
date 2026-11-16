@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 // testdata/windrose_session.log is the join-related and leave-related lines

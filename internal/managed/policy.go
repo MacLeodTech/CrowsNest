@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
 	"os"
 	"path/filepath"
 	"slices"
 
-	"github.com/fiddler110/crowsnest/internal/backup"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/execguard"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/backup"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/execguard"
+	"github.com/macleodtech/crowsnest/internal/modules"
 	"gopkg.in/yaml.v3"
 )
 

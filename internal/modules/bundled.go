@@ -1,8 +1,8 @@
 package modules
 
 import (
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/games/windrose"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games/windrose"
 )
 
 // Bundled returns the modules that ship in the binary: Palworld, Valheim and

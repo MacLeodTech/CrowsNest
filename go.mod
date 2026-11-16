@@ -1,4 +1,4 @@
-module github.com/fiddler110/crowsnest
+module github.com/macleodtech/crowsnest
 
 go 1.27.0
 

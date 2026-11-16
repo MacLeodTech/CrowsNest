@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 // setupHarness is a harness whose users file is empty and which offers setup.
