@@ -21,7 +21,7 @@ loaders.general = () => {
   const form = $("settings-form");
   const errorEl = $("settings-error");
   const fields = ["idle_enabled", "idle_minutes", "night_enabled", "night_start_hour",
-    "night_end_hour", "max_active_games", "raw_console", "require_admin_mfa"];
+    "night_end_hour", "max_active_games", "raw_console", "require_admin_mfa", "require_player_mfa"];
   const input = (n) => form.elements[n];
   (async () => {
     const res = await callAPI("/api/settings");
@@ -317,6 +317,44 @@ loaders.users = () => {
     if ("google_enabled" in data) googleEnabled = data.google_enabled;
     return data.users;
   };
+  // Devices: who is signed in as this user, from where, and a way to end one or all.
+  const toggleDevices = async (li, u) => {
+    const open = li.querySelector(".user-devices");
+    if (open) { open.remove(); return; }
+    const box = document.createElement("div");
+    box.className = "user-devices";
+    li.append(box);
+    const path = `/api/users/${encodeURIComponent(u.username)}/sessions`;
+    const load = async () => {
+      box.replaceChildren();
+      const res = await callAPI(path);
+      if (!res.ok) { box.textContent = await errorText(res, "Loading devices"); return; }
+      const sessions = (await res.json()).sessions || [];
+      if (!sessions.length) { box.textContent = "Not signed in on any device."; return; }
+      const ul = document.createElement("ul");
+      ul.className = "plain-list";
+      sessions.forEach((s) => {
+        const row = document.createElement("li");
+        const label = document.createElement("span");
+        label.textContent = `${s.device}${s.ip ? " (" + s.ip + ")" : ""}, last seen ${new Date(s.last_seen).toLocaleString()}`;
+        label.title = s.user_agent || "";
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn btn-ghost btn-danger";
+        b.textContent = "Sign out";
+        b.addEventListener("click", async () => {
+          const r = await callAPI(`${path}/revoke`, { method: "POST", body: JSON.stringify({ id: s.id }) });
+          if (!r.ok) { toast(await errorText(r, "Signing out"), "error"); return; }
+          toast(`Signed ${u.username} out of that device.`, "ok");
+          load();
+        });
+        row.append(label, " ", b);
+        ul.append(row);
+      });
+      box.append(ul);
+    };
+    load();
+  };
   const render = (users) => {
     list.replaceChildren();
     users.forEach((u) => {
@@ -355,6 +393,7 @@ loaders.users = () => {
           }));
         }
         if (!u.self) {
+          actions.append(mk("Devices", () => toggleDevices(li, u)));
           actions.append(mk("Sign out", async () => {
             const r = await request(`/api/users/${encodeURIComponent(u.username)}`, "PUT", { revoke_sessions: true });
             if (r) toast(`Signed ${u.username} out everywhere.`, "ok");

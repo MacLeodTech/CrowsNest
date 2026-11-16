@@ -185,3 +185,16 @@ func TestDoctor_ContainersAndNotifications(t *testing.T) {
 		t.Errorf("the webhook URL is a secret and must not be printed:\n%s", out)
 	}
 }
+
+func TestIsMountPoint(t *testing.T) {
+	mi := filepath.Join(t.TempDir(), "mountinfo")
+	os.WriteFile(mi, []byte("22 1 8:1 / / rw - ext4 /dev/sda1 rw\n40 22 8:17 /backups /game-backups rw,relatime - ext4 /dev/sdb1 rw\n41 22 8:17 /mydir /game\\040backups rw - ext4 /dev/sdb1 rw\n"), 0o600)
+	for path, want := range map[string]bool{"/game-backups": true, "/game-backups/": true, "/game backups": true, "/other": false} {
+		if got, known := isMountPoint(path, mi); !known || got != want {
+			t.Errorf("isMountPoint(%q) = %v, %v; want %v", path, got, known, want)
+		}
+	}
+	if _, known := isMountPoint("/x", filepath.Join(t.TempDir(), "none")); known {
+		t.Error("an unreadable mountinfo should be unknown, not a failure")
+	}
+}

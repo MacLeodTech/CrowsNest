@@ -755,3 +755,58 @@ func TestMFAGate(t *testing.T) {
 		t.Errorf("account page = %d, want it reachable", rec.Code)
 	}
 }
+
+func TestRequirePlayerMFA(t *testing.T) {
+	h := newHarness(t, nil)
+	dir := t.TempDir()
+	users := filepath.Join(dir, "users")
+	hash, _ := auth.HashPassword("whatever1")
+	for _, name := range []string{"pat", "gina", "root"} {
+		if err := auth.SetUserHash(users, name, hash); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := auth.SetRole(users, "pat", auth.RolePlayer, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := auth.SetRole(users, "gina", auth.RolePlayer, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := auth.SetRole(users, "root", auth.RoleAdmin, false); err != nil {
+		t.Fatal(err)
+	}
+	store, _ := auth.NewUserStore(users)
+	h.App.Auth.Store, h.App.Auth.Sessions.Store = store, store
+	vlt, _ := vault.New("", filepath.Join(dir, "k"))
+	h.App.MFA, _ = mfa.NewStore(filepath.Join(dir, "mfa.json"), vlt)
+	h.App.Settings, _ = settings.New(settings.Values{IdleMinutes: 15, NightStartHour: 23, NightEndHour: 5, MaxActiveGames: 1}, "")
+	set := func(admin, player bool) {
+		h.App.Settings.Modify(func(v *settings.Values) error { v.RequireAdminMFA, v.RequirePlayerMFA = admin, player; return nil })
+	}
+	want := func(user string, need bool) {
+		t.Helper()
+		if got := h.App.mfaRequiredFor(user); got != need {
+			t.Errorf("mfaRequiredFor(%q) = %v, want %v", user, got, need)
+		}
+	}
+
+	set(false, false)
+	want("pat", false)
+	set(false, true) // players only
+	want("pat", true)
+	want("root", false) // the admin setting is separate
+	set(true, false)
+	want("pat", false)
+	want("root", true)
+
+	// A player linked to Google is not asked: Google does the second factor.
+	set(false, true)
+	if err := auth.SetGoogleEmail(users, "gina", "gina@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Reload(); err != nil { // the running server's watcher does this within seconds
+		t.Fatal(err)
+	}
+	want("gina", false)
+	want("pat", true)
+}

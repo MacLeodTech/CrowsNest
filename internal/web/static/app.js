@@ -574,6 +574,30 @@ function applyHealth(health) {
   }
 }
 
+// A sign-in from a browser or system the person had not used before shows until they dismiss it (also on the
+// Account page). Looked up once when the dashboard opens.
+async function showSignInNotice() {
+  const banner = document.getElementById("signin-banner");
+  if (!banner) return;
+  try {
+    const res = await callAPI("/api/account/profile");
+    if (!res.ok) return;
+    const n = (await res.json()).new_sign_in;
+    if (!n) return;
+    document.getElementById("signin-banner-detail").textContent =
+      `${n.device}${n.ip ? " (" + n.ip + ")" : ""}, ${new Date(n.at).toLocaleString()}`;
+    banner.hidden = false;
+  } catch (err) {
+    // no banner; the Account page still shows it
+  }
+}
+const signInDismiss = document.getElementById("signin-banner-dismiss");
+if (signInDismiss) signInDismiss.addEventListener("click", async () => {
+  await callAPI("/api/account/sign-in-notice/dismiss", { method: "POST" });
+  document.getElementById("signin-banner").hidden = true;
+});
+showSignInNotice();
+
 async function showNotifyDetail() {
   try {
     const res = await fetch("/api/notify/status");
@@ -1221,6 +1245,19 @@ async function openFile(id, f) {
   filesNote(card, hints.join(" · "));
   card.querySelector(".files-reload").onclick = () => openFile(id, f);
   card.querySelector(".files-save").onclick = () => saveFile(id, card);
+  const sr = card.querySelector(".files-save-restart");
+  sr.hidden = f.restart !== "required" || isOffline(card);
+  sr.onclick = () => saveFile(id, card, true);
+  const syntax = card.querySelector(".files-syntax");
+  const isJSON = /\.json$/i.test(f.path);
+  const check = () => {
+    let msg = "";
+    if (isJSON && text.value.trim()) { try { JSON.parse(text.value); } catch (err) { msg = `This is not valid JSON yet: ${err.message}`; } }
+    syntax.textContent = msg;
+    syntax.hidden = !msg;
+  };
+  text.oninput = check;
+  check();
   await loadVersions(id, card, f);
 }
 
@@ -1246,7 +1283,17 @@ async function loadVersions(id, card, f) {
   };
 }
 
-async function saveFile(id, card) {
+// Wait (up to a few minutes) for the card's status to become `want`; the live stream keeps dataset.status current.
+async function waitForStatus(card, want, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (card.dataset.status === want) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+}
+
+async function saveFile(id, card, restart) {
   const st = filesState[id];
   const text = card.querySelector(".files-text");
   const f = st.file;
@@ -1254,9 +1301,9 @@ async function saveFile(id, card) {
   if (d.added === 0 && d.removed === 0) { toast("Nothing changed.", "info"); return; }
   const name = card.dataset.name;
   const password = await confirmAction({
-    title: `Save ${f.label} on ${name}?`,
-    message: `${d.added} line(s) added or changed, ${d.removed} removed or changed. The old version is kept so you can load it again. Enter your password to confirm.`,
-    confirmLabel: "Save",
+    title: restart ? `Save ${f.label} and restart ${name}?` : `Save ${f.label} on ${name}?`,
+    message: (restart ? `${name} stops (it is saved first) and starts again, so anyone playing is disconnected. ` : "") + `${d.added} line(s) added or changed, ${d.removed} removed or changed. The old version is kept so you can load it again. Enter your password to confirm.`,
+    confirmLabel: restart ? "Save and restart" : "Save",
     eyebrow: "// files",
     askPassword: true,
   });
@@ -1271,7 +1318,14 @@ async function saveFile(id, card) {
     });
     if (!res.ok) { toast(await errorText(res), "error"); return; }
     const out = await res.json();
-    toast(out.restart === "required" ? `${f.label} saved. Restart ${name} to apply it.` : `${f.label} saved.`, "info");
+    if (!restart) toast(out.restart === "required" ? `${f.label} saved. Restart ${name} to apply it.` : `${f.label} saved.`, "info");
     await openFile(id, f);
+    if (restart) {
+      toast(`${f.label} saved. Restarting ${name}…`, "info");
+      const stop = await callAPI(`/api/games/${encodeURIComponent(id)}/stop`, { method: "POST" });
+      if (!stop.ok) { toast(await errorText(stop, "Stop"), "error"); return; }
+      if (!(await waitForStatus(card, "offline", 180000))) { toast(`${name} is taking a while to stop. Start it yourself when it has.`, "info"); return; }
+      await checkOK(await callAPI(`/api/games/${encodeURIComponent(id)}/start`, { method: "POST" }), "Start");
+    }
   } finally { btn.disabled = false; }
 }

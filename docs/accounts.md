@@ -17,6 +17,10 @@ player, so promote yourself with `crowsnest set-role <you> admin` before relying
 warning at startup when no user resolves to admin). Role changes apply within seconds, and a demotion applies on the
 user's very next request.
 
+The **Devices** button on a user lists where they are signed in (browser, system, address, last seen) and ends one
+session or all of them, so an admin can see and cut off a sign-in that looks wrong. Your own devices are on your Account
+page. Each sign-out is written to the activity log.
+
 To limit a user to some games from the command line, run `crowsnest set-games <user> palworld,valheim`; with no list
 it lifts the limit, so the user may use every game. This is the same game allowlist as on the Users tab.
 
@@ -132,18 +136,24 @@ password plus a code. An admin can reset someone's app from Users (a lost phone)
 password sign-in only: Google and OIDC sign-ins rely on the provider's own protections. It stays optional for each
 person unless an admin turns on **Settings, General, Require admins to set up an authenticator app**: then an admin who
 signs in with a password and has no app yet can reach only their Account page (pages redirect there, API calls get a
-403) until they enrol. Admins who sign in through Google or another provider are not asked. Not built: forcing
-players, and WebAuthn/passkeys.
+403) until they enrol. Admins who sign in through Google or another provider are not asked. **Require players who sign
+in with a password to set up an authenticator app too** does the same for players, except that a player linked to
+Google or another provider (a Google email or SSO email on their user, or a place on the Google allowlist) is never
+asked, because the provider does the second factor. A passkey also satisfies either setting.
 
-**What is encrypted on disk.** The Google and OIDC client secrets, TOTP secrets, game secrets (`secrets.json`) and the
+**What is encrypted on disk.** The users file (names, roles, emails, password hashes and game limits, as one sealed value), the Google and OIDC client secrets, TOTP secrets, game secrets (`secrets.json`) and the
 session-signing key are sealed with AES-256-GCM, each bound to its own field so a copied value won't open elsewhere.
-Recovery codes and passwords are stored only as bcrypt hashes. Older plain-text files are encrypted on first start.
+Recovery codes and passwords are stored only as bcrypt hashes. Older plain-text files, the users file included, are encrypted on first start.
 The key is `CROWSNEST_MASTER_KEY` (24+ characters, e.g. `openssl rand -base64 32`) when set; keep it **outside** the
 data volume (the host's `.env`, a Docker secret). Otherwise a key file `master.key` is created beside the session
 secret and the server warns: that still protects a copied single file or backup, but not a copy of the whole volume.
 Lose the key and the sealed secrets can't be read: re-enter the client secrets and game secrets, and everyone re-enrols
-their authenticator app. Secrets are never sent back to the browser (fields show "set"), and recovery codes and QR
-codes are served uncacheable. Not encrypted: the users file (bcrypt hashes and emails), the settings, and the activity
+their authenticator app. The users file can't be read either: delete it and create the first admin again (open `/setup`,
+or run `crowsnest set-password <name>`). The `crowsnest` commands that edit users (`set-password`, `set-role`,
+`set-games` and the rest) open the file with the same key, so run them where `CROWSNEST_MASTER_KEY` is set (inside the
+container, `docker compose exec`). `crowsnest state export` copies the file as it is, so a snapshot of an encrypted
+users file needs the key to be useful. Secrets are never sent back to the browser (fields show "set"), and recovery codes and QR
+codes are served uncacheable. Not encrypted: the settings and the activity
 log. Game join passwords shown on a card are shown on purpose.
 
 **Setting the key, and changing it.** Setting `CROWSNEST_MASTER_KEY` is the recommended setup (the key file works, but
@@ -151,7 +161,7 @@ sits in the folder it protects). The AES key is derived from it with Argon2id (a
 key file); sealed values read `enc:v2:`. Values written by older versions (`enc:v1:`) still open and are moved to v2 the
 next time they are saved. To move every file at once, or to change the key (a leak, a leaver, a move from the key file to
 the environment), stop the panel, run `crowsnest state export` for a snapshot, then
-`CROWSNEST_NEW_MASTER_KEY=<new> crowsnest rekey` with the current key set as usual. It re-seals the session secret, the
+`CROWSNEST_NEW_MASTER_KEY=<new> crowsnest rekey` with the current key set as usual. It re-seals the users file, the session secret, the
 Google and SSO client secrets, authenticator apps and the dashboard games' passwords, and is safe to run again if it was
 interrupted. Then set `CROWSNEST_MASTER_KEY` to the new value, remove `CROWSNEST_NEW_MASTER_KEY`, delete `master.key` if
 you had one, and start the panel. With no new key, `crowsnest rekey` just brings every value to the newest scheme.

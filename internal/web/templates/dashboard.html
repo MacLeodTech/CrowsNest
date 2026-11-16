@@ -25,6 +25,11 @@
     <svg class="icon"><use href="#i-alert"/></svg>
     <span>The offsite backup copy has a problem or has stopped reporting, so your backups may not be leaving this machine. <b id="offsite-detail"></b> See <code>docker compose logs crowsnest-offsite</code>.</span>
   </div>
+  <div id="signin-banner" class="banner" role="status" hidden>
+    <svg class="icon"><use href="#i-alert"/></svg>
+    <span>New sign-in on your account: <b id="signin-banner-detail"></b>. If it was not you, <a href="/account">sign it out and change your password</a>.</span>
+    <button id="signin-banner-dismiss" class="btn btn-ghost" type="button">Dismiss</button>
+  </div>
   <section class="hero" id="fleet" aria-live="polite">
     <div class="hero-body">
       <p class="eyebrow"><i class="beacon"></i>// fleet status</p>
@@ -126,8 +131,10 @@
         <p class="files-note"></p>
         <div class="files-editor" hidden>
           <textarea class="files-text" rows="14" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="File contents"></textarea>
+          <p class="files-syntax" role="status" hidden></p>
           <div class="files-bar">
             <button class="btn btn-primary files-save" type="button">Save</button>
+            <button class="btn btn-ghost files-save-restart" type="button" hidden>Save and restart</button>
             <button class="btn btn-ghost files-reload" type="button">Reload</button>
             <select class="files-versions" aria-label="Earlier versions"></select>
             <button class="btn btn-ghost files-load-version" type="button">Load that version</button>

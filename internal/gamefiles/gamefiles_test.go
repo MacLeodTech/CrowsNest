@@ -298,3 +298,23 @@ func TestStoppedGameUsesTheHelperOnlyWhenItCan(t *testing.T) {
 		t.Fatalf("running game used the helper: %v", err)
 	}
 }
+
+func TestCheckSyntax(t *testing.T) {
+	js := Spec{Path: "/data/Config.JSON"}
+	if err := js.CheckSyntax("{\"a\": 1}\n"); err != nil {
+		t.Errorf("valid json refused: %v", err)
+	}
+	if err := js.CheckSyntax("  \n"); err != nil {
+		t.Errorf("an empty file is allowed: %v", err)
+	}
+	err := js.CheckSyntax("{\n  \"a\": 1,\n  \"b\": ,\n}")
+	if !errors.Is(err, ErrInvalidJSON) || !strings.Contains(err.Error(), "line 3") {
+		t.Errorf("syntax error = %v, want ErrInvalidJSON on line 3", err)
+	}
+	if err := js.CheckSyntax("{\"a\": 1"); !errors.Is(err, ErrInvalidJSON) {
+		t.Errorf("truncated json = %v", err)
+	}
+	if err := (Spec{Path: "/data/server.properties"}).CheckSyntax("{not json"); err != nil {
+		t.Errorf("non-json files are not checked: %v", err)
+	}
+}
