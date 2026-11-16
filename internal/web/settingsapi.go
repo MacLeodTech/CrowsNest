@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/audit"
 	"io"
 	"maps"
 	"net/http"
@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/settings"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/settings"
 )
 
 const maxSettingsBodyBytes = 4096

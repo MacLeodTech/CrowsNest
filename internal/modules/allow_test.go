@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
 )
 
 func signedModuleDir(t *testing.T, id string, mutate func(body []byte) []byte) (dir string, keys []dockerguard.PolicyKey, body []byte) {

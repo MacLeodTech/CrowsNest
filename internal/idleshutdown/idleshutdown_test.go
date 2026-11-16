@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/statehub"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/statehub"
 )
 
 // fakeStatus reports a fixed Status/error, optionally switching to a

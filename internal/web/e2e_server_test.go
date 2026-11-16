@@ -10,12 +10,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/backup"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/managed"
-	"github.com/fiddler110/crowsnest/internal/restore"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/backup"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/managed"
+	"github.com/macleodtech/crowsnest/internal/restore"
 )
 
 // TestE2EServer serves the dashboard on E2E_ADDR over a fake docker, for the browser tests in e2e/. It is skipped

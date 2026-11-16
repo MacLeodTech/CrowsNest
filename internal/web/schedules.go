@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/schedule"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/schedule"
 )
 
 type schedulesResponse struct {

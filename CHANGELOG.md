@@ -8,7 +8,8 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 - [x] **Images now publish to `ghcr.io/macleodtech/…` (2026-11-16).** The repo moved to the MacLeodTech org, whose
   name is mixed-case; `cosign sign` rejects an uppercase registry reference, so `publish.yml` lowercases the image
-  names first. Compose files and docs point at the new path. Releases up to v0.16.9 stay under `ghcr.io/fiddler110/…`.
+  names first. Compose files and docs point at the new path. Releases up to v0.16.9 stay under `ghcr.io/fiddler110/…`. The Go module path is now
+  `github.com/macleodtech/crowsnest`.
 
 ## Guard image (R24)
 

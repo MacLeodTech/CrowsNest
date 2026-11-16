@@ -4,8 +4,8 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/sse"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/sse"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/dockerctl/dockertest"
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 func logsPrintTwoLines(f *dockertest.Fake) { f.Logs["windrose"] = "line one\nline two\n" }

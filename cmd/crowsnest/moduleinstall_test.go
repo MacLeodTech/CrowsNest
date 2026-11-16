@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 func serveFile(t *testing.T, path string) (*httptest.Server, *string) {

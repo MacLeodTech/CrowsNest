@@ -17,11 +17,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/statehub"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/statehub"
 )
 
 const (

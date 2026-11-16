@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/logtrack"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/logtrack"
 )
 
 // testdata/valheim_session.log is a real lloesche/valheim-server session

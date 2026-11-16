@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 )
 
 // Helper edits files of a stopped game through a one-shot container. The managed-games manager provides it; it is

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 func TestFormatAndDuration(t *testing.T) {

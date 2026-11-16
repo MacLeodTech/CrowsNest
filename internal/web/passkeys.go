@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 func (a *App) passkeysOn(w http.ResponseWriter, r *http.Request) bool {

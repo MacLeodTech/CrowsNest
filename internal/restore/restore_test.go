@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/backup"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/dockerctl/dockertest"
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/backup"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 var apiPrefix = regexp.MustCompile(`^/v[0-9.]+`)

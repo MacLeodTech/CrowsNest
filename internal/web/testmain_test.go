@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 func TestMain(m *testing.M) {

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/history"
-	"github.com/fiddler110/crowsnest/internal/managed"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/managed"
 )
 
 // ManagedGames is what the dashboard's Games API needs from the managed-game

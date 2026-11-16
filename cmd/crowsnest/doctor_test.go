@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/config"
 )
 
 type fakePing struct{ err error }

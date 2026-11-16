@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // OIDCProvider is one OpenID Connect sign-in provider (Authentik, Keycloak,

@@ -12,7 +12,7 @@ package memadmit
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"os"
 	"path/filepath"
 	"sync"

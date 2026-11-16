@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
 )
 
 // newFakeDockerInspect builds a dockerctl.Client whose engine reports startedAt for every container name the tests

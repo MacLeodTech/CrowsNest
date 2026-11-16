@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"io"
 	"io/fs"
 	"os"
@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/config"
 )
 
 const stateUsage = `usage:

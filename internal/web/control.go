@@ -3,13 +3,13 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/audit"
 	"net/http"
 	"strconv"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/exclusivity"
-	"github.com/fiddler110/crowsnest/internal/memadmit"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/exclusivity"
+	"github.com/macleodtech/crowsnest/internal/memadmit"
 )
 
 // maxSwitchBodyBytes caps the /api/games/{id}/switch request body — it's a

@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // runRender writes the compose file and GUARD_SCOPES for every configured game

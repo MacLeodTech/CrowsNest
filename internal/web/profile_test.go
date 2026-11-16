@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/backup"
-	"github.com/fiddler110/crowsnest/internal/notify"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/backup"
+	"github.com/macleodtech/crowsnest/internal/notify"
 )
 
 // profileHarness turns the registry on and signs the harness user in on two "devices".

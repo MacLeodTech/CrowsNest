@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/backup"
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/execguard"
-	"github.com/fiddler110/crowsnest/internal/managed"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/backup"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/execguard"
+	"github.com/macleodtech/crowsnest/internal/managed"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // execRules lists every command CrowsNest itself ever runs with `docker
