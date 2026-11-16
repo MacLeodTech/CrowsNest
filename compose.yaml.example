@@ -189,6 +189,9 @@ services:
   #     test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2375/_ping"]
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock
+  #     # With modules installed from a URL (modules_dir in config.yaml), also mount that folder read-only at the
+  #     # same path and set GUARD_MODULES_DIR to it: the guard checks signed modules and, with --exec, learns their
+  #     # backup and file commands from it (see docs/modules.md).
 
   # Windrose: host networking and an invite code (the game's own P2P relay), so players need no port forward.
   # Everything lives in one directory, ${USERDIR}/Windrose, which is the server's install folder: the world

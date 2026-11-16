@@ -232,7 +232,7 @@ max_scopes: 64
 - **A module installed from a URL, and signed by a key in `policy.yaml`, is admitted like a bundled one.** List the
   publisher's key in the policy (the dashboard shows these keys and never edits them):
   `trusted_keys: [{name: me, public_key: <base64>}]`, and mount the modules folder read-only into the guard
-  (`GUARD_MODULES_DIR`; the quickstart does). When you switch such a module on, the guard checks the saved signature
+  (`GUARD_MODULES_DIR`; the quickstart does). The same mount is how the guard's exec allowlist (`--exec`, or execguard) learns the module's backup and config-file commands: without it an installed module's backup is refused with `command not allowlisted`. When you switch such a module on, the guard checks the saved signature
   (`module.yaml.sig`, kept at install) against those keys itself, then admits the image and ports its manifest
   declares. Edit the installed file, delete the signature, or remove the key and it falls back to the weaker case
   below. The key must be in the policy, not only in `managed.trusted_keys` in config.yaml, because the panel can
