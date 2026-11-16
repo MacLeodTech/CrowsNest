@@ -68,8 +68,12 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 #### P4: larger design work
 
 - [ ] **R24. A separate minimal guard image.** The guard holds the Docker socket but runs the panel image. The
-  image no longer has the docker CLI or compose (Phase 6), so what is left is a guard-only image: the static binary
-  and nothing else (no shell, no certificates it does not use).
+  Dockerfile now has a `guard` target (`docker build --target guard`): the static binary on `scratch`, 16 MB, no
+  shell, no certificates; `crowsnest healthcheck URL` replaces `wget`. Tried read-only with all caps dropped. `publish.yml`
+  now also builds, scans, pushes and signs it as `ghcr.io/<owner>/crowsnest-guard` (untested until the first release
+  runs). What is left: after that release exists, point the quickstart and `compose.yaml.example` guard at it
+  (`healthcheck: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]`), not before, because older
+  pinned tags have no guard image.
 - [ ] **Tier 2 adapter-sidecar contract** (track A, Phase 2), when a module needs it.
 
 ### A. Modular games (open)

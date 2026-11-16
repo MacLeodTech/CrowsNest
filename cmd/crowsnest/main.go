@@ -12,9 +12,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -123,6 +126,9 @@ func main() {
 		}
 		os.Exit(runDoctor(cfg, &dockerctl.Client{Host: cfg.Server.DockerHost}, os.Stdout))
 	case "healthcheck":
+		if len(os.Args) > 2 { // `healthcheck URL`: a guard-only image has no wget to probe the guard's /_ping
+			os.Exit(probeArg(os.Args[2]))
+		}
 		os.Exit(healthcheck())
 	case "set-password":
 		if len(os.Args) < 3 {
@@ -782,8 +788,59 @@ func healthcheck() int {
 		addr = healthcheckAddr(cfg.Server.Addr)
 	}
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get("http://" + addr + "/healthz")
+	loopback := netip.MustParseAddr("127.0.0.1")
+	host, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return probe(loopback, 5000, "/healthz")
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return probe(loopback, 5000, "/healthz")
+	}
+	ip, err := netip.ParseAddr(host)
+	if err != nil { // "localhost" or another name: the loopback address
+		ip = loopback
+	}
+	return probe(ip, port, "/healthz")
+}
+
+// probe does one HTTP GET and returns 0 when it answers 200. A healthcheck
+// only ever asks the container about itself, so the caller picks nothing but
+// a port: the scheme and path come from the fixed set below, and redirects
+// are never followed. The URL is built here from
+// those constants plus an integer, never from the argument's text.
+func probe(host netip.Addr, port int, path string) int {
+	if !host.IsValid() || port < 1 || port > 65535 {
+		fmt.Fprintf(os.Stderr, "healthcheck: bad port %d\n", port)
+		return 1
+	}
+	var fixedPath string
+	switch path {
+	case "/healthz":
+		fixedPath = "/healthz"
+	case "/_ping":
+		fixedPath = "/_ping"
+	default:
+		fmt.Fprintf(os.Stderr, "healthcheck: path %q is not one of /healthz, /_ping\n", path)
+		return 1
+	}
+	// The request URL is a constant; where it really goes is decided by the
+	// dialer, which ignores the URL's host and connects only to the address we
+	// were given.
+	dest := netip.AddrPortFrom(host, uint16(port)).String()
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			Proxy: nil, // never via HTTP_PROXY
+			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "tcp", dest)
+			},
+		},
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
+	target := "http://healthcheck.invalid" + fixedPath
+	resp, err := client.Get(target)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -791,10 +848,31 @@ func healthcheck() int {
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "healthz returned %d\n", resp.StatusCode)
+		fmt.Fprintf(os.Stderr, "%s%s returned %d\n", dest, fixedPath, resp.StatusCode)
 		return 1
 	}
 	return 0
+}
+
+// probeArg runs probe for a `healthcheck URL` argument, which must be plain
+// http on a loopback address with a port and no credentials. Only its port
+// and path are used; the host is always 127.0.0.1.
+func probeArg(raw string) int {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "http" || u.User != nil {
+		fmt.Fprintf(os.Stderr, "healthcheck: want http://127.0.0.1:PORT/path, got %q\n", raw)
+		return 1
+	}
+	if ip := net.ParseIP(u.Hostname()); u.Hostname() != "localhost" && (ip == nil || !ip.IsLoopback()) {
+		fmt.Fprintf(os.Stderr, "healthcheck: %q is not a loopback address\n", u.Hostname())
+		return 1
+	}
+	port, err := strconv.Atoi(u.Port())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "healthcheck: %q has no numeric port\n", raw)
+		return 1
+	}
+	return probe(netip.MustParseAddr("127.0.0.1"), port, u.Path)
 }
 
 // sessionAllowed reports whether a session's user may still be signed in: a
