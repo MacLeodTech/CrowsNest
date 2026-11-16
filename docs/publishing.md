@@ -37,7 +37,7 @@ Verify a pulled image:
 
 ```sh
 cosign verify ghcr.io/fiddler110/crowsnest:<version> \
-  --certificate-identity-regexp 'https://github.com/fiddler110/CrowsNest/.*' \
+  --certificate-identity-regexp 'https://github.com/MacLeodTech/CrowsNest/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 

@@ -428,7 +428,7 @@ Newest first within each part. Design detail for the modular-games rework is in
 ## Earlier work
 
 - [x] **Modules moved out (2026-11-12).** Minecraft, Source and Don't Starve Together are no longer bundled; they are
-  published, signed, in [crowsnest-modules](https://github.com/fiddler110/crowsnest-modules) with `sevendtd`.
+  published, signed, in [crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules) with `sevendtd`.
   Valheim, Palworld and Windrose stay in the binary. The engine tests keep copies under
   `internal/modules/modtest/` (registered through `modules.AddBundled`, only in test binaries). Upgrade note in
   `docs/modules.md`.

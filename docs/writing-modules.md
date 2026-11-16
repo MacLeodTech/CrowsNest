@@ -7,7 +7,7 @@ its state in its log, a module is usually 30 lines.
 This guide builds one from scratch. The finished example is
 [`examples/mygame/module.yaml`](examples/mygame/module.yaml); the bundled modules in
 `internal/modules/bundled/` (`valheim`, `palworld`, `windrose`) and those in
-[fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules) (`minecraft` reads the log, `source` uses RCON, `sevendtd`, `dontstarve`) are bigger, real ones.
+[MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules) (`minecraft` reads the log, `source` uses RCON, `sevendtd`, `dontstarve`) are bigger, real ones.
 
 ## What a module can and cannot do
 
@@ -212,7 +212,7 @@ again. `crowsnest module list` shows what is installed and flags any file that n
 
 There is no central catalogue: you publish the file and people install it from your URL (a repository can also publish an `index.json` list that operators point `managed.catalogue_url` at; see modules.md). A ready-made layout for
 a repository of modules (one folder each, signing and check scripts, a template) is
-[fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules).
+[MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules).
 
 1. **Host the file over https** at a stable address. A raw file in a git repo works (use a tag or commit in the URL
    so it does not change under people): `https://raw.githubusercontent.com/you/crowsnest-mygame/v1.0/module.yaml`.

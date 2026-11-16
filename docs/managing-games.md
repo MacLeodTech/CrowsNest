@@ -25,11 +25,11 @@ file adds and removes, and replaces it after your password. The new file must be
 the same id. Games already using the module keep their current wiring until you save their settings or restart them.
 Installing grants nothing: a game from the
 module still has to fit `policy.yaml`. The panel only fetches https from public addresses (a private, loopback,
-link-local or Tailscale address is refused, even through a redirect). See docs/modules.md, "Signed modules". Modules to try this with: [fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules).
+link-local or Tailscale address is refused, even through a redirect). See docs/modules.md, "Signed modules". Modules to try this with: [MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules).
 
 ### Pulling in a module, step by step
 
-Example: the 7 Days to Die module from [fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules).
+Example: the 7 Days to Die module from [MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules).
 
 1. **Trust the publisher** (once). Add the key to `config.yaml`, then restart CrowsNest. The key for that repository is
    in its README; check it there, not in the same place you got the module from.
@@ -41,7 +41,7 @@ Example: the 7 Days to Die module from [fiddler110/crowsnest-modules](https://gi
    ```
 2. **Install it.** On the Games page, under **Game modules from a source**, paste the address and press **Look at
    it**:
-   `https://raw.githubusercontent.com/fiddler110/crowsnest-modules/main/sevendtd/module.yaml`
+   `https://raw.githubusercontent.com/MacLeodTech/crowsnest-modules/main/sevendtd/module.yaml`
    Read the list of what the module would run (image, ports, environment, backup command), type your password and press
    **Install this exact file**. Use the `main` address (or a branch or tag you follow) if you want updates later; an
    address with a commit hash in it is pinned for good and **Check for update** will never find anything new.

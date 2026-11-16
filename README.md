@@ -133,7 +133,7 @@ What I haven't verified against real servers yet:
 - a full Start then Switch between two real games.
 
 The Minecraft, Source, Don't Starve Together and 7 Days to Die modules (published in
-[crowsnest-modules](https://github.com/fiddler110/crowsnest-modules)) were written and tested against sample logs, not
+[crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules)) were written and tested against sample logs, not
 against servers I run. Treat them as a starting point. The quickstart stack hasn't been run end to end on a clean machine
 either, though its config and policy are checked by a test. Installing and updating a module from a URL, per-device
 sessions and the offsite copy have been run in tests and on a test copy of the stack, not yet on the setup I use every
@@ -149,7 +149,7 @@ has the history and the open items, and [`roadmap.md`](roadmap.md) has what's ne
 | `windrose` | Windrose (`indifferentbroccoli/windrose-server-docker`) | the container log; richer info if the optional Windrose+ integration is on |
 
 Valheim, Palworld and Windrose ship inside CrowsNest. Others are modules you install, and are published in
-[fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules): Minecraft (`itzg/minecraft-server`,
+[MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules): Minecraft (`itzg/minecraft-server`,
 container log), Source-engine games such as TF2, CS2 and L4D2 (RCON), Don't Starve Together (container log) and 7 Days
 to Die (container log). Minecraft, Source and Don't Starve Together used to be bundled; see
 [docs/modules.md](docs/modules.md) if you used them.
@@ -165,7 +165,7 @@ writing one, checking it with `crowsnest module check` against a captured log be
 checked), and sharing it. CrowsNest doesn't need to know about
 your module for it to work.
 
-Community-style modules that are not bundled live in [fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules): one folder per module, each signed, with a README
+Community-style modules that are not bundled live in [MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules): one folder per module, each signed, with a README
 that covers everything a module needs, scripts to check, sign and install them, and a template to start from. Its
 signing key for `managed.trusted_keys` is in that README.
 
@@ -218,7 +218,7 @@ Admins add, edit, copy, disable and delete games from the **Games** page, inside
 A game can be **copied** (its settings, with secrets copied by the server and never shown), and extra modules can be
 **installed from an https address** if a publisher you trust signed them: previewed, confirmed with your password,
 pinned by hash, and updatable from the dashboard. Modules to try this with:
-[fiddler110/crowsnest-modules](https://github.com/fiddler110/crowsnest-modules).
+[MacLeodTech/crowsnest-modules](https://github.com/MacLeodTech/crowsnest-modules).
 
 Details, including a step-by-step for pulling in a module: [docs/managing-games.md](docs/managing-games.md).
 
