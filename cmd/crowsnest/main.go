@@ -516,6 +516,7 @@ func serve() error {
 	}
 	app.AuditFile = auditLog.Path()
 	app.Notify = notifyStatus
+	app.Notifier = notifier
 	app.NotifyConfigured = len(channels) > 0
 	if len(channels) == 0 && cfg.Notifications.DiscordWebhookURLEnv != "" {
 		log.Printf("notify: %s is not set — Discord notifications disabled", cfg.Notifications.DiscordWebhookURLEnv)

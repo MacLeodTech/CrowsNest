@@ -243,6 +243,34 @@ func TestProfile_NewSignInNotice(t *testing.T) {
 	}
 }
 
+func TestProfile_NewSignInIsAnnounced(t *testing.T) {
+	h, _, _ := profileHarness(t)
+	n := &chanNotifier{ch: make(chan string, 4)}
+	got := n.ch
+	h.App.Notifier = n
+	rec := func(ua string) auth.SessionRecord {
+		return auth.SessionRecord{ID: "x", User: "tester", Created: time.Now(), UserAgent: ua, IP: "203.0.113.5"}
+	}
+	firefox := "Mozilla/5.0 (X11; Linux x86_64) Firefox/130.0"
+	iphone := "Mozilla/5.0 (iPhone; CPU iPhone OS 17) Safari/604.1"
+	h.App.NoteSignIn(rec(firefox)) // the first device ever: not news
+	h.App.NoteSignIn(rec(firefox)) // the same device again
+	select {
+	case m := <-got:
+		t.Fatalf("announced a sign-in that is not new: %q", m)
+	case <-time.After(100 * time.Millisecond):
+	}
+	h.App.NoteSignIn(rec(iphone))
+	select {
+	case m := <-got:
+		if !strings.Contains(m, "tester") || !strings.Contains(m, "Safari") || !strings.Contains(m, "203.0.113.5") || !strings.Contains(m, "sign out everywhere") {
+			t.Errorf("message = %q", m)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("a new device was not announced")
+	}
+}
+
 func TestHealthReportsFailingNotifications(t *testing.T) {
 	h := pagesHarness(t)
 	get := func() map[string]bool {

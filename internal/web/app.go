@@ -90,6 +90,8 @@ type App struct {
 	// Notify reports whether the latest message on each notification channel was delivered; NotifyConfigured
 	// says whether any channel is set up. Optional.
 	Notify *notify.Status
+	// Notifier posts to the configured channels (nil: none); a sign-in from a new device is announced through it.
+	Notifier notify.Notifier
 	// AuditFile is the tamper-evident audit file the export endpoint serves. Optional.
 	AuditFile        string
 	NotifyConfigured bool

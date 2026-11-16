@@ -4,6 +4,13 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## New sign-in: Discord and a dashboard banner
+
+- [x] **A sign-in from a new device is announced (done 2026-11-16).** Besides the activity log and the Account page,
+  it now posts to the notification channels (name, device and address, and how to sign it out), in the background so
+  a slow channel never delays the sign-in, and shows as a dashboard banner until dismissed. A person's very first
+  sign-in is not news and says nothing.
+
 ## Doctor checks containers and notifications
 
 - [x] **`crowsnest doctor` looks for each game's container and each notification channel (done 2026-11-16).** A

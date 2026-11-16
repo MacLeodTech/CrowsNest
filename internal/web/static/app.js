@@ -574,6 +574,30 @@ function applyHealth(health) {
   }
 }
 
+// A sign-in from a browser or system the person had not used before shows until they dismiss it (also on the
+// Account page). Looked up once when the dashboard opens.
+async function showSignInNotice() {
+  const banner = document.getElementById("signin-banner");
+  if (!banner) return;
+  try {
+    const res = await callAPI("/api/account/profile");
+    if (!res.ok) return;
+    const n = (await res.json()).new_sign_in;
+    if (!n) return;
+    document.getElementById("signin-banner-detail").textContent =
+      `${n.device}${n.ip ? " (" + n.ip + ")" : ""}, ${new Date(n.at).toLocaleString()}`;
+    banner.hidden = false;
+  } catch (err) {
+    // no banner; the Account page still shows it
+  }
+}
+const signInDismiss = document.getElementById("signin-banner-dismiss");
+if (signInDismiss) signInDismiss.addEventListener("click", async () => {
+  await callAPI("/api/account/sign-in-notice/dismiss", { method: "POST" });
+  document.getElementById("signin-banner").hidden = true;
+});
+showSignInNotice();
+
 async function showNotifyDetail() {
   try {
     const res = await fetch("/api/notify/status");

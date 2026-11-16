@@ -81,8 +81,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### B. Accounts and settings (open)
 
-- [ ] **Profile page:** email/avatar, naming a device, an admin view of other people's sessions, and showing the
-  new sign-in notice beyond the Account page (dashboard banner, Discord; see R19).
+- [ ] **Profile page:** email/avatar, naming a device, and an admin view of other people's sessions.
 - [ ] **Sign-in:** editing the `name=email`
   env allowlist, requiring MFA for players,
   encrypting the users file.

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -337,6 +338,19 @@ func (a *App) NoteSignIn(rec auth.SessionRecord) {
 	}
 	if isNew && a.History != nil {
 		a.History.Record(history.KindUsers, "", rec.User, "new sign-in from "+device+" ("+rec.IP+")")
+	}
+	if isNew && a.Notifier != nil {
+		msg := "New sign-in for " + rec.User + " from " + device
+		if rec.IP != "" {
+			msg += " (" + rec.IP + ")"
+		}
+		msg += ". If that was not them, sign out everywhere from the Account page."
+		// In the background: a slow channel must not hold up the sign-in.
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			a.Notifier.Notify(ctx, msg)
+		}()
 	}
 }
 
