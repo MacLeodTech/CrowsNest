@@ -645,3 +645,23 @@ func TestBackupConfig_RestoreNeedsDir(t *testing.T) {
 		}
 	}
 }
+
+func TestBackupConfig_RestoreBinds(t *testing.T) {
+	ok := &BackupConfig{Exec: []string{"b"}, Dir: "/palworld/backups", Restore: []string{"/bin/sh"},
+		RestoreBinds: []string{"/srv/pal:/palworld"}}
+	if err := ok.CheckKeep(); err != nil {
+		t.Errorf("valid restore_binds: %v", err)
+	}
+	for name, b := range map[string]*BackupConfig{
+		"no restore":      {Exec: []string{"b"}, Dir: "/x", RestoreBinds: []string{"/h:/x"}},
+		"relative host":   {Exec: []string{"b"}, Dir: "/x", Restore: []string{"r"}, RestoreBinds: []string{"h:/x"}},
+		"no colon":        {Exec: []string{"b"}, Dir: "/x", Restore: []string{"r"}, RestoreBinds: []string{"/h"}},
+		"read-only flag":  {Exec: []string{"b"}, Dir: "/x", Restore: []string{"r"}, RestoreBinds: []string{"/h:/x:ro"}},
+		"folder not held": {Exec: []string{"b"}, Dir: "/x/backups", Restore: []string{"r"}, RestoreBinds: []string{"/h:/other"}},
+		"sibling prefix":  {Exec: []string{"b"}, Dir: "/palworld2/b", Restore: []string{"r"}, RestoreBinds: []string{"/h:/palworld"}},
+	} {
+		if err := b.CheckKeep(); err == nil {
+			t.Errorf("%s was accepted", name)
+		}
+	}
+}

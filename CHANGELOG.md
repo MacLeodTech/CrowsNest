@@ -4,6 +4,30 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Editable files behind a folder the game names
+
+- [x] **`files:` paths may contain `*` (done 2026-11-16).** For a file under a world id or version folder the module
+  cannot know, such as Windrose's `WorldDescription.json`. The fixed read and write scripts resolve the pattern
+  inside the container and refuse unless it matches exactly one file (the count is in the error), so an ambiguous
+  pattern never writes. Tested with the real shell (one match, none, two, mode kept). Windrose's own module is not
+  updated yet: the world layout has to be read off a real container first.
+
+## INI checks in the file editor
+
+- [x] **The file editor checks `.ini` files for the mistakes no reader accepts (done 2026-11-16):** a section header
+  that is never closed, a line starting with `=`, and an Unreal-style `(` group or quote that is never closed (as in
+  Palworld's `OptionSettings=(...)`). Everything else in an INI passes, since the format has no standard.
+
+## Restore for games written by hand in config.yaml
+
+- [x] **Config-file games get the Restore button too (done 2026-11-16).** A game's `backup:` block takes `restore`
+  (the command) and the new `restore_binds` (the folders the helper mounts, which must hold `dir`). The helper
+  `<id>-restore` runs in the image of the game's own container, with those folders and no network, and the
+  guard scope for it is written by the operator (see `docs/backups.md`). The chosen file is checked over exec while
+  the game runs. Tested with a fake engine and for real on the test stack (a Debian game container behind the guard with a
+  `<id>-restore` scope: backup, restore of a running and of a stopped game, refusals); not yet run on production Palworld.
+- [x] **Fixed a flaky guard test** that wrote its watched files non-atomically.
+
 ## Name your devices; YAML and XML checks in the file editor
 
 - [x] **Devices can be named (done 2026-11-16).** A **Rename** button on each device in the Account page sets a short

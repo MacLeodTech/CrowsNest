@@ -199,6 +199,12 @@ type BackupSpec struct {
 	Keep       int
 	// CanRestore is true when the game can restore a backup from its folder.
 	CanRestore bool
+	// Dir is where the game's backups are inside its container, and RestoreCmd
+	// and RestoreBinds describe the restore of a game written by hand in
+	// config.yaml (a dashboard game builds its restore from its module).
+	Dir          string
+	RestoreCmd   []string
+	RestoreBinds []string
 }
 
 // ConnectSecret is a labelled value shown on a game's dashboard card.

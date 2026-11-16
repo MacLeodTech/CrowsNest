@@ -465,6 +465,11 @@ type BackupConfig struct {
 	// (read-only), and the chosen file's full path in $CROWSNEST_RESTORE_FILE.
 	// Only for dashboard-enabled games with Dir set and a shared backups folder.
 	Restore []string `yaml:"restore"`
+	// RestoreBinds are the folders the restore container mounts for a game
+	// written by hand in config.yaml (host:container, read-write). A dashboard
+	// game takes them from its module; here the folder holding the backups
+	// (dir) must be one of them. Needs restore.
+	RestoreBinds []string `yaml:"restore_binds"`
 }
 
 // ExecListDir is the directory listed and pruned with docker exec: list_dir,
@@ -493,6 +498,27 @@ func (b *BackupConfig) CheckKeep() error {
 	for _, a := range b.Restore {
 		if strings.TrimSpace(a) == "" {
 			return fmt.Errorf("restore: empty argument")
+		}
+	}
+	if len(b.RestoreBinds) > 0 && len(b.Restore) == 0 {
+		return fmt.Errorf("restore_binds needs restore")
+	}
+	for _, bind := range b.RestoreBinds {
+		host, ctr, ok := strings.Cut(bind, ":")
+		if !ok || !strings.HasPrefix(host, "/") || !strings.HasPrefix(ctr, "/") || strings.ContainsAny(ctr, ":") {
+			return fmt.Errorf("restore_binds (%s): must look like /host/path:/container/path", bind)
+		}
+	}
+	if len(b.RestoreBinds) > 0 {
+		dir, held := path.Clean(b.ExecListDir()), false
+		for _, bind := range b.RestoreBinds {
+			_, ctr, _ := strings.Cut(bind, ":")
+			if ctr = path.Clean(ctr); dir == ctr || strings.HasPrefix(dir, strings.TrimRight(ctr, "/")+"/") {
+				held = true
+			}
+		}
+		if !held {
+			return fmt.Errorf("restore_binds: none of them holds the backups folder (%s), so the restore could not read the file", dir)
 		}
 	}
 	if b.Keep > 0 && b.ExecListDir() == "" {

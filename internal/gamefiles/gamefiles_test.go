@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -23,7 +24,10 @@ func TestNormalize(t *testing.T) {
 	for name, sp := range map[string]Spec{
 		"relative":   {ID: "a", Path: "data/x"},
 		"dotdot":     {ID: "a", Path: "/data/../etc/passwd"},
-		"glob":       {ID: "a", Path: "/data/*.cfg"},
+		"glob ?":     {ID: "a", Path: "/data/?.cfg"},
+		"glob last":  {ID: "a", Path: "/data/*"},
+		"glob first": {ID: "a", Path: "/*/x.json"},
+		"glob space": {ID: "a", Path: "/data/a b/*/x.json"},
 		"quote":      {ID: "a", Path: "/data/x'y"},
 		"proc":       {ID: "a", Path: "/proc/self/environ"},
 		"dir":        {ID: "a", Path: "/data/"},
@@ -336,5 +340,76 @@ func TestCheckSyntaxYAMLAndXML(t *testing.T) {
 	}
 	if err := x.CheckSyntax("<a><b></a>"); !errors.Is(err, ErrInvalidSyntax) || !strings.Contains(err.Error(), "line 1") {
 		t.Errorf("bad xml = %v", err)
+	}
+}
+
+func TestCheckSyntaxINI(t *testing.T) {
+	ini := Spec{Path: "/data/PalWorldSettings.ini"}
+	ok := "; comment\n[/Script/Pal.PalGameWorldSettings]\nOptionSettings=(Difficulty=None,ServerName=\"A (b)\",Rate=1.000000)\r\n+Paths=x\nbare\n"
+	if err := ini.CheckSyntax(ok); err != nil {
+		t.Errorf("valid ini refused: %v", err)
+	}
+	for name, bad := range map[string]string{
+		"open section": "[Section\nA=1\n",
+		"leading =":    "A=1\n=2\n",
+		"open paren":   "A=1\nOptionSettings=(A=1,B=2\n",
+		"open quote":   "OptionSettings=(A=\"x)\n",
+	} {
+		err := ini.CheckSyntax(bad)
+		if !errors.Is(err, ErrInvalidSyntax) || !strings.Contains(err.Error(), "line") {
+			t.Errorf("%s: err = %v", name, err)
+		}
+	}
+}
+
+func TestPatternPathOnARealShell(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Normalize([]Spec{{ID: "w", Path: dir + "/Worlds/*/*/World.json"}}); err != nil {
+		t.Fatal(err)
+	}
+	sp := Spec{ID: "w", Path: dir + "/Worlds/*/*/World.json", MaxBytes: 64}
+	run := func(stdin string, args []string) (string, error) {
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Stdin = strings.NewReader(stdin)
+		out, err := cmd.Output()
+		return string(out), err
+	}
+	one := dir + "/Worlds/ABC/1.0/World.json"
+	if err := os.MkdirAll(filepath.Dir(one), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run("x", sp.ReadArgs()); err == nil { // no match is an error, not an empty file
+		t.Fatal("no match read as success")
+	}
+	if err := os.WriteFile(one, []byte("{\"a\":1}\n"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := run("", sp.ReadArgs()); err != nil || out != "{\"a\":1}\n" {
+		t.Fatalf("read: %q %v", out, err)
+	}
+	if _, err := run("{\"a\":2}\n", sp.WriteArgs()); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(one); string(b) != "{\"a\":2}\n" {
+		t.Fatalf("written %q", b)
+	}
+	if fi, _ := os.Stat(one); fi.Mode().Perm() != 0o640 {
+		t.Fatalf("mode lost: %v", fi.Mode())
+	}
+	two := dir + "/Worlds/DEF/1.0/World.json"
+	if err := os.MkdirAll(filepath.Dir(two), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(two, []byte("other"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run("", sp.ReadArgs()); err == nil {
+		t.Fatal("two matches read as success")
+	}
+	if _, err := run("clobber", sp.WriteArgs()); err == nil {
+		t.Fatal("two matches written")
+	}
+	if b, _ := os.ReadFile(two); string(b) != "other" {
+		t.Fatalf("a file was touched although the pattern was ambiguous: %q", b)
 	}
 }
