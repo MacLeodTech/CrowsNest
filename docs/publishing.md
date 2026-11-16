@@ -1,7 +1,9 @@
 # Publishing and security scanning
 
-The image is published to `ghcr.io/macleodtech/crowsnest` (public package) by
-`.github/workflows/publish.yml`.
+The images (`ghcr.io/macleodtech/crowsnest` and `ghcr.io/macleodtech/crowsnest-guard`) are published by
+`.github/workflows/publish.yml`. The packages are private, so a host that pulls them runs `docker login ghcr.io`
+once with a token that has `read:packages` (GitHub: Settings, Developer settings, Personal access tokens). To let
+anyone pull without a login, change each package's visibility to Public in its package settings.
 
 ## Automatic releases
 
