@@ -49,6 +49,8 @@ func (r *doctorReport) add(level, what, fix string) {
 // dockerPinger is the slice of dockerctl.Client that doctor needs.
 type dockerPinger interface {
 	Ping(ctx context.Context) error
+	// Exists reports whether a container with this name exists, running or not.
+	Exists(ctx context.Context, name string) (bool, error)
 }
 
 // writable reports whether files can be created in dir, the way the panel
@@ -149,11 +151,15 @@ func runDoctor(cfg *config.Config, docker dockerPinger, w io.Writer) int {
 	} else {
 		r.add(docOK, fmt.Sprintf("%d module(s) loaded, %d game(s) in config.yaml", len(mods.Manifests()), len(cfg.Games)), "")
 	}
+	doctorContainers(r, cfg, docker)
 	if cfg.Managed.Dir == "" {
 		r.add(docInfo, "dashboard games are off (managed.dir is not set)", "set managed.dir and managed.policy_file to add games from the Games page")
 	} else {
 		doctorManaged(r, cfg)
 	}
+
+	fmt.Fprintln(w, "\nNotifications")
+	doctorNotifications(r, *cfg.Notifications)
 
 	if cfg.Platform.BackupsRoot != "" {
 		fmt.Fprintln(w, "\nBackups")
@@ -181,6 +187,49 @@ func runDoctor(cfg *config.Config, docker dockerPinger, w io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// doctorContainers checks that each game set up in config.yaml has a container on the host. CrowsNest starts
+// and stops containers but never creates them, so a missing one makes that game's Start fail.
+func doctorContainers(r *doctorReport, cfg *config.Config, docker dockerPinger) {
+	for _, g := range cfg.Games {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ok, err := docker.Exists(ctx, g.ContainerName)
+		cancel()
+		switch {
+		case err != nil:
+			r.add(docWarn, fmt.Sprintf("%s: could not look for container %q: %v", g.ID, g.ContainerName, err), "")
+		case !ok:
+			r.add(docWarn, fmt.Sprintf("%s: container %q does not exist, so Start will fail", g.ID, g.ContainerName),
+				"create it on the host without starting it (`docker compose up --no-start <service>`)")
+		default:
+			r.add(docOK, fmt.Sprintf("%s: container %q exists", g.ID, g.ContainerName), "")
+		}
+	}
+}
+
+// doctorNotifications reports which outbound channels are on. A channel is on only when config.yaml names an
+// environment variable and that variable is set, the same rule the panel uses.
+func doctorNotifications(r *doctorReport, n config.NotificationsConfig) {
+	any := false
+	for _, c := range []struct{ name, env string }{
+		{"Discord", n.DiscordWebhookURLEnv}, {"ntfy", n.NtfyURLEnv}, {"webhook", n.WebhookURLEnv},
+	} {
+		switch {
+		case c.env == "":
+			continue
+		case envValue(c.env) == "":
+			r.add(docWarn, fmt.Sprintf("%s: %s is named in config.yaml but not set, so no %s notices are sent", c.name, c.env, c.name),
+				"pass the variable to the crowsnest container (compose `environment:`) and restart it")
+		default:
+			any = true
+			r.add(docOK, fmt.Sprintf("%s notices are on (%s is set)", c.name, c.env), "")
+		}
+	}
+	if !any {
+		r.add(docInfo, "no notification channel is on, so auto-stop and crash notices go nowhere",
+			"set notifications.discord_webhook_url_env in config.yaml and pass that variable to the container")
+	}
 }
 
 // doctorBackups checks the shared backups folder as the panel sees it. It

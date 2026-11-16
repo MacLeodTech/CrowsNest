@@ -4,6 +4,14 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Doctor checks containers and notifications
+
+- [x] **`crowsnest doctor` looks for each game's container and each notification channel (done 2026-11-16).** A
+  `config.yaml` game whose container does not exist is flagged with the `up --no-start` fix, since Start would fail.
+  A Discord, ntfy or webhook variable named in `config.yaml` but empty in the container is flagged, and the report
+  says when no channel is on. Webhook URLs are never printed. Plus `docs/live-checks.md`, a checklist for the manual
+  checks against real servers.
+
 ## Per-game actions: start but not stop
 
 - [x] **A player can be start-only for chosen games (done 2026-11-16).** `<USER>_START_ONLY=game,game` in the users
