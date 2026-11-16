@@ -88,8 +88,8 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   Source, Don't Starve Together and 7 Days to Die. **Palworld:** its image rebuilds the whole
   `PalWorldSettings.ini` from environment variables on every start, so nothing declared there would last; it needs
   the module to set `DISABLE_GENERATE_SETTINGS=true` (after which the form options stop applying to the file) or a
-  per-setting editor. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) need a glob or directory form
-  of `files:`. A settings editor in the module form, with named fields, would serve both games better than raw files.
+  per-setting editor. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can now use a `*` path
+  (done); the module still needs writing once the layout is read off a real container. A settings editor in the module form, with named fields, would serve both games better than raw files.
   A stopped-game edit for games set up in `config.yaml`.
 - [ ] Crash-loop detection is untested against a real crashing container (also in track C).
 

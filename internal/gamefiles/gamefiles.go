@@ -27,7 +27,9 @@ import (
 type Spec struct {
 	ID    string `yaml:"id" json:"id"`
 	Label string `yaml:"label" json:"label"`
-	// Path is absolute, inside the container.
+	// Path is absolute, inside the container. It may hold * (one path segment each, no ? or []) when the folder
+	// has a name only the game knows, such as a world id: it must then match exactly one file, or the editor
+	// says how many it found. A file that does not exist yet cannot be created through a pattern.
 	Path string `yaml:"path" json:"path"`
 	// MaxBytes caps the file (default 65536, at most 1 MiB).
 	MaxBytes int `yaml:"max_bytes" json:"max_bytes"`
@@ -93,8 +95,10 @@ func checkPath(p string) error {
 	switch {
 	case !strings.HasPrefix(p, "/") || strings.HasSuffix(p, "/"):
 		return errors.New("path must be an absolute path to a file")
-	case strings.ContainsAny(p, "\x00\n\r*?[]{}$`\\\"'") || strings.Contains(p, ".."):
-		return errors.New("path has characters that are not allowed (no .., globs or quotes)")
+	case strings.ContainsAny(p, "\x00\n\r ?[]{}$`\\\"'") || strings.Contains(p, ".."):
+		return errors.New("path has characters that are not allowed (no .., spaces, quotes, or globs other than *)")
+	case strings.HasSuffix(p, "*") || strings.HasPrefix(p, "/*"):
+		return errors.New("a * must sit inside the path, not at its very start or end, so a pattern cannot reach everything")
 	case strings.Contains(p, "//"):
 		return errors.New("path must not contain //")
 	}
@@ -106,12 +110,28 @@ func checkPath(p string) error {
 	return nil
 }
 
+// IsPattern reports whether Path has a * in it.
+func (s Spec) IsPattern() bool { return strings.Contains(s.Path, "*") }
+
+// resolve sets p to the one file the pattern in $1 matches, or stops with exit 3 and says how many it found. The
+// pattern comes from the module, never from a request, and has no space or quote in it, so the unquoted $1 only globs.
+const resolve = `n=0; for f in $1; do if [ -f "$f" ]; then n=$((n+1)); p=$f; fi; done; [ "$n" -eq 1 ] || { echo "$n files match $1, need exactly 1" >&2; exit 3; }; `
+
+const (
+	readPatternScript        = resolve + `head -c "$2" -- "$p"`
+	writePatternScript       = resolve + `t="$p.crowsnest-tmp"; cp -p -- "$p" "$t" && cat > "$t" && mv -f -- "$t" "$p"`
+	helperWritePatternScript = resolve + `t="$p.crowsnest-tmp"; cp -p -- "$p" "$t" && printf '%s' "$` + ContentEnv + `" > "$t" && mv -f -- "$t" "$p"`
+)
+
 // readScript prints the file, or nothing if it does not exist yet (saving then creates it). It reads one byte more
 // than the limit so "too large" can be told from "exactly full".
 const readScript = `[ -e "$1" ] || exit 0; head -c "$2" -- "$1"`
 
 // ReadArgs is the exact command that prints the file.
 func (s Spec) ReadArgs() []string {
+	if s.IsPattern() {
+		return []string{"sh", "-c", readPatternScript, "sh", s.Path, strconv.Itoa(s.MaxBytes + 1)}
+	}
 	return []string{"sh", "-c", readScript, "sh", s.Path, strconv.Itoa(s.MaxBytes + 1)}
 }
 
@@ -121,6 +141,9 @@ const writeScript = `t="$1.crowsnest-tmp"; { [ ! -e "$1" ] || cp -p -- "$1" "$t"
 
 // WriteArgs is the exact command that replaces the file with its standard input.
 func (s Spec) WriteArgs() []string {
+	if s.IsPattern() {
+		return []string{"sh", "-c", writePatternScript, "sh", s.Path}
+	}
 	return []string{"sh", "-c", writeScript, "sh", s.Path}
 }
 
@@ -137,6 +160,9 @@ func (s Spec) HelperReadArgs() []string { return s.ReadArgs() }
 
 // HelperWriteArgs: see HelperReadArgs. The content travels in ContentEnv.
 func (s Spec) HelperWriteArgs() []string {
+	if s.IsPattern() {
+		return []string{"/bin/sh", "-c", helperWritePatternScript, "sh", s.Path}
+	}
 	return []string{"/bin/sh", "-c", helperWriteScript, "sh", s.Path}
 }
 

@@ -109,7 +109,7 @@ folders or image. It is shown in the approval summary. See docs/backups.md, "Res
 files:
   - id: server-properties            # what the API calls it; the web side never sends a path
     label: Server settings
-    path: /data/server.properties    # absolute, inside the container; no .., globs or quotes; not under /proc, /sys, /dev
+    path: /data/server.properties    # absolute, inside the container; no .., quotes or spaces; `*` allowed, see below; not under /proc, /sys, /dev
     max_bytes: 65536                 # default 65536, at most 1048576
     restart: "Restart to apply it."  # "required" (the default), "none", or a hint shown under the editor
     stop_first: false                # true if the game rewrites the file when it stops
@@ -129,6 +129,13 @@ image, and any game set up in `config.yaml`, needs the game running. Use `stop_f
 rewrites on shutdown, so the editor tells the admin to edit it while the game is stopped. The approval
 summary lists every file path, because installing such a module lets admins overwrite it. See docs/managing-games.md,
 "Editing config files".
+
+**A folder only the game names.** When the path crosses a folder the game makes up (a world id, a version), put `*` in
+it: `path: /data/Worlds/*/*/WorldDescription.json`. Each `*` is one folder level (never `?`, `[]` or `{}`, never as the
+whole last segment or the first one). The read and write scripts resolve the pattern inside the container and need it to
+match **exactly one** file; with none or several they stop and say how many matched, and write nothing. A file behind a
+pattern must already exist (the pattern cannot say where to create it). With several worlds, point the pattern at the
+one you want by naming its folder.
 
 An optional `accent: "#rrggbb"` sets the colour of the game's dashboard card. Without one the card uses the
 default theme colour.
