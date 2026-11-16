@@ -166,7 +166,34 @@ The result is in the activity log (kind `restore`) and in Discord. Things to wat
   data folder (Windrose: uid 1000), as the game expects.
 - **Older archives.** A restore command expects the layout its module's backup command writes (`world/`,
   `worlds_local/`, `SaveProfiles/`). Archives made some other way are not understood.
-- **Config-file games** (a hand-written compose service) cannot restore from the dashboard; their backups stay where they are.
+- **Config-file games** (a hand-written compose service) can restore too, once you say how: see the next section.
+
+### Restoring a game written by hand in `config.yaml`
+
+A game with its own compose file has no module, so you give the restore command and the folders it needs in the
+game's `backup:` block, and a guard scope for the helper container:
+
+```yaml
+backup:
+  exec: ["backup"]
+  dir: /palworld/backups            # restore needs dir (not list_dir)
+  restore: ["/bin/sh", "-c", "set -e; rm -rf /palworld/Pal/Saved/SaveGames; tar xzf \"$CROWSNEST_RESTORE_FILE\" -C /palworld/Pal Saved/SaveGames; chown -R \"$(stat -c %u:%g /palworld)\" /palworld/Pal/Saved/SaveGames"]
+  restore_binds: ["/srv/palworld/data:/palworld"]   # host:container; one of them must hold dir
+```
+
+(That `restore` is the bundled Palworld module's; adjust the paths to your image.) 
+```json
+{"name": "palworld-restore", "images": ["thijsvanloef/palworld-server-docker"],
+ "binds": ["/srv/palworld/data"], "networks": ["none"], "ports": []}
+```
+
+The panel reads the image from the game's own container, so the scope's image is the one the compose file uses. The
+helper runs the `restore` command as its entrypoint with `$CROWSNEST_RESTORE_FILE` set to
+`<list_dir>/<chosen file>`, has only the `restore_binds` folders and **no network**, and is removed afterwards. The
+steps, the password prompt and the safety backup are the same as above. Two differences: the chosen file is checked
+over `docker exec` (`dir`), so a **running** game is needed to list its backups (a stopped one is restored without that
+check, and the command must fail if the file is not there); and **you** write the restore command, so test it on a
+copy of a world first. Write it to replace the world completely, not to merge into it.
 
 ## Backing up the panel's own state
 

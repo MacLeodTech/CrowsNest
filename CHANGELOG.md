@@ -4,6 +4,15 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Restore for games written by hand in config.yaml
+
+- [x] **Config-file games get the Restore button too (done 2026-11-16).** A game's `backup:` block takes `restore`
+  (the command) and the new `restore_binds` (the folders the helper mounts, which must hold `dir`). The helper
+  `<id>-restore` runs in the image of the game's own container, with those folders and no network, and the
+  guard scope for it is written by the operator (see `docs/backups.md`). The chosen file is checked over exec while
+  the game runs. Tested with a fake engine; not yet run against the production Palworld container.
+- [x] **Fixed a flaky guard test** that wrote its watched files non-atomically.
+
 ## Name your devices; YAML and XML checks in the file editor
 
 - [x] **Devices can be named (done 2026-11-16).** A **Rename** button on each device in the Account page sets a short

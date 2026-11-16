@@ -37,7 +37,8 @@ func backupSpec(b *config.BackupConfig) *BackupSpec {
 		return nil
 	}
 	return &BackupSpec{Exec: b.Exec, ListDir: b.ExecListDir(), LocalDir: b.LocalDir, BeforeStop: b.BeforeStop, Keep: b.Keep,
-		CanRestore: len(b.Restore) > 0 && b.LocalDir != ""}
+		CanRestore: len(b.Restore) > 0 && (b.LocalDir != "" || len(b.RestoreBinds) > 0),
+		Dir:        b.ExecListDir(), RestoreCmd: b.Restore, RestoreBinds: b.RestoreBinds}
 }
 
 // DockerTarget converts a GameDef's container identity into a

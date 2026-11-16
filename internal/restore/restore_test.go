@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,6 +31,7 @@ type engine struct {
 	helper     bool // the helper container exists
 	helperExit int
 	log        []string
+	created    string           // the body of the last create
 	exec       *dockertest.Fake // answers exec (the safety backup's command)
 }
 
@@ -52,11 +54,13 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	case p == "/containers/create":
 		e.log = append(e.log, "create "+r.URL.Query().Get("name"))
+		body, _ := io.ReadAll(r.Body)
+		e.created = string(body)
 		e.helper = true
 		w.WriteHeader(201)
 		fmt.Fprint(w, `{"Id":"abc"}`)
 	case p == "/containers/pal/json":
-		fmt.Fprintf(w, `{"State":{"Running":%v,"FinishedAt":"0001-01-01T00:00:00Z"}}`, e.gameUp)
+		fmt.Fprintf(w, `{"State":{"Running":%v,"FinishedAt":"0001-01-01T00:00:00Z"},"Config":{"Image":"ghcr.io/x/pal:1"}}`, e.gameUp)
 	case p == "/containers/pal-restore/json" && r.Method == http.MethodGet:
 		if !e.helper {
 			w.WriteHeader(404)
@@ -350,5 +354,58 @@ func TestRestore_WouldPruneAppliesEvenWithoutBeforeStop(t *testing.T) {
 	f.def.Backup.BeforeStop = false
 	if err := f.m.Request(context.Background(), f.def, "old.tgz", "alex", false); !errors.Is(err, ErrWouldPrune) {
 		t.Fatalf("Request = %v, want ErrWouldPrune", err)
+	}
+}
+
+// newConfigFixture is a game written by hand in config.yaml: backups are listed over exec, there is no shared
+// folder, and the restore is built from the game's own config.
+func newConfigFixture(t *testing.T) *fixture {
+	t.Helper()
+	f := newFixture(t, 0)
+	f.e.exec.Exec = func(_ string, cmd []string, _ string) (string, string, int) {
+		if len(cmd) > 0 && cmd[0] == "find" {
+			return "1700000300.0 10 new.tgz\n1700000200.0 10 mid.tgz\n", "", 0
+		}
+		return "", "", 0
+	}
+	f.m.Spec = func(string, string) (dockerctl.CreateSpec, bool) { return dockerctl.CreateSpec{}, false }
+	f.def.Backup = &games.BackupSpec{Exec: []string{"backup"}, ListDir: "/palworld/backups", BeforeStop: true, CanRestore: true,
+		Dir: "/palworld/backups", RestoreCmd: []string{"/bin/sh", "-c", "tar xf \"$CROWSNEST_RESTORE_FILE\""},
+		RestoreBinds: []string{"/srv/pal:/palworld"}}
+	return f
+}
+
+func TestRestore_ConfigGameRunsItsOwnCommandInItsOwnImage(t *testing.T) {
+	f := newConfigFixture(t)
+	if err := f.m.Request(context.Background(), f.def, "mid.tgz", "alex", false); err != nil {
+		t.Fatalf("Request = %v", err)
+	}
+	f.m.Wait()
+	if got, want := strings.Join(f.e.log, ","), "stop pal,create pal-restore,remove pal-restore,start pal"; got != want {
+		t.Fatalf("sequence = %s, want %s", got, want)
+	}
+	for _, want := range []string{`"Image":"ghcr.io/x/pal:1"`, `/srv/pal:/palworld`, `CROWSNEST_RESTORE_FILE=/palworld/backups/mid.tgz`,
+		`"NetworkMode":"none"`, `"Entrypoint":["/bin/sh"`} {
+		if !strings.Contains(f.e.created, want) {
+			t.Errorf("create body lacks %s:\n%s", want, f.e.created)
+		}
+	}
+}
+
+func TestRestore_ConfigGameRefusesAFileItDoesNotHave(t *testing.T) {
+	f := newConfigFixture(t)
+	if err := f.m.Request(context.Background(), f.def, "ghost.tgz", "alex", false); !errors.Is(err, ErrBadFile) {
+		t.Fatalf("Request = %v, want ErrBadFile", err)
+	}
+	if len(f.e.log) != 0 {
+		t.Fatalf("something ran: %v", f.e.log)
+	}
+}
+
+func TestRestore_ConfigGameWithoutRestoreFoldersIsNotRestorable(t *testing.T) {
+	f := newConfigFixture(t)
+	f.def.Backup.RestoreBinds = nil
+	if err := f.m.Request(context.Background(), f.def, "mid.tgz", "alex", false); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("Request = %v, want ErrNotConfigured", err)
 	}
 }

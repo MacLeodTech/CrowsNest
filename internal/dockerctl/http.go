@@ -178,7 +178,8 @@ type inspectResp struct {
 	}
 	RestartCount int
 	Config       struct {
-		Tty bool
+		Tty   bool
+		Image string
 	}
 }
 
@@ -193,6 +194,19 @@ func (c *Client) inspect(ctx context.Context, name string) (*inspectResp, error)
 		return nil, fmt.Errorf("dockerctl: decode inspect %s: %w", name, err)
 	}
 	return &ir, nil
+}
+
+// Image is the image reference the container was created from, as written when
+// it was created (repository:tag).
+func (c *Client) Image(ctx context.Context, name string) (string, error) {
+	ir, err := c.inspect(ctx, name)
+	if err != nil {
+		return "", err
+	}
+	if ir.Config.Image == "" {
+		return "", fmt.Errorf("dockerctl: %s has no image reference", name)
+	}
+	return ir.Config.Image, nil
 }
 
 // Ping reports whether the Docker daemon (or the socket proxy in front of it)
