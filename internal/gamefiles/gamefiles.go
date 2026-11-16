@@ -163,9 +163,10 @@ func CheckText(b []byte) error {
 // ErrInvalidSyntax is returned when a .json, .yaml, .yml or .xml file would be saved with a syntax error.
 var ErrInvalidSyntax = errors.New("invalid syntax")
 
-// CheckSyntax refuses content that cannot be what the file's name says it is. Only JSON, YAML and XML are checked:
-// a game that reads one of these stops at the first typo, so catching it here saves a crash loop. Other formats
-// (INI, .properties, plain lists) have no strict grammar and pass.
+// CheckSyntax refuses content that cannot be what the file's name says it is. JSON, YAML and XML are checked
+// strictly: a game that reads one of these stops at the first typo, so catching it here saves a crash loop. INI files
+// get only the mistakes no reader accepts (see checkINI). Other formats (.properties, plain lists) have no strict
+// grammar and pass.
 func (s Spec) CheckSyntax(content string) error {
 	if strings.TrimSpace(content) == "" {
 		return nil
@@ -177,6 +178,52 @@ func (s Spec) CheckSyntax(content string) error {
 		return checkYAML(content)
 	case ".xml":
 		return checkXML(content)
+	case ".ini":
+		return checkINI(content)
+	}
+	return nil
+}
+
+// checkINI is deliberately loose, since INI has no standard (Unreal's has "+Key=" lines, some readers allow bare keys).
+// It refuses a section header that is never closed, a line that starts with "=", and a value that opens a "(" group
+// (Unreal style, as in Palworld's OptionSettings) and never closes it. Quoted text is skipped when counting.
+func checkINI(content string) error {
+	for i, line := range strings.Split(content, "\n") {
+		l := strings.TrimSpace(strings.TrimSuffix(line, "\r"))
+		if l == "" || l[0] == ';' || l[0] == '#' {
+			continue
+		}
+		bad := func(msg string) error { return fmt.Errorf("%w in INI: %s (line %d)", ErrInvalidSyntax, msg, i+1) }
+		if l[0] == '[' {
+			if !strings.Contains(l, "]") {
+				return bad("section header is missing its closing ]")
+			}
+			continue
+		}
+		if l[0] == '=' {
+			return bad("a line cannot start with =")
+		}
+		_, val, ok := strings.Cut(l, "=")
+		if !ok {
+			continue
+		}
+		if val = strings.TrimSpace(val); strings.HasPrefix(val, "(") {
+			depth, quoted := 0, false
+			for _, c := range val {
+				switch {
+				case c == '"':
+					quoted = !quoted
+				case quoted:
+				case c == '(':
+					depth++
+				case c == ')':
+					depth--
+				}
+			}
+			if depth != 0 || quoted {
+				return bad("a ( group or quote is never closed")
+			}
+		}
 	}
 	return nil
 }

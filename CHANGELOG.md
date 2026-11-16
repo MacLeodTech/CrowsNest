@@ -4,6 +4,12 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## INI checks in the file editor
+
+- [x] **The file editor checks `.ini` files for the mistakes no reader accepts (done 2026-11-16):** a section header
+  that is never closed, a line starting with `=`, and an Unreal-style `(` group or quote that is never closed (as in
+  Palworld's `OptionSettings=(...)`). Everything else in an INI passes, since the format has no standard.
+
 ## Restore for games written by hand in config.yaml
 
 - [x] **Config-file games get the Restore button too (done 2026-11-16).** A game's `backup:` block takes `restore`

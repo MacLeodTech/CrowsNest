@@ -338,3 +338,22 @@ func TestCheckSyntaxYAMLAndXML(t *testing.T) {
 		t.Errorf("bad xml = %v", err)
 	}
 }
+
+func TestCheckSyntaxINI(t *testing.T) {
+	ini := Spec{Path: "/data/PalWorldSettings.ini"}
+	ok := "; comment\n[/Script/Pal.PalGameWorldSettings]\nOptionSettings=(Difficulty=None,ServerName=\"A (b)\",Rate=1.000000)\r\n+Paths=x\nbare\n"
+	if err := ini.CheckSyntax(ok); err != nil {
+		t.Errorf("valid ini refused: %v", err)
+	}
+	for name, bad := range map[string]string{
+		"open section": "[Section\nA=1\n",
+		"leading =":    "A=1\n=2\n",
+		"open paren":   "A=1\nOptionSettings=(A=1,B=2\n",
+		"open quote":   "OptionSettings=(A=\"x)\n",
+	} {
+		err := ini.CheckSyntax(bad)
+		if !errors.Is(err, ErrInvalidSyntax) || !strings.Contains(err.Error(), "line") {
+			t.Errorf("%s: err = %v", name, err)
+		}
+	}
+}
