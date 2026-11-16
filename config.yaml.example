@@ -7,7 +7,7 @@
 
 server:
   addr: ":5000"
-  session_secret_file: /app/.session_secret   # generated on first run if absent
+  session_secret_file: /app/data/session_secret   # generated on first run if absent; keep it in the writable data folder
   tz: "America/New_York"                      # IANA name; used by night_shutdown and logs
   # metrics_token_env: CROWSNEST_METRICS_TOKEN   # names an env var; when it is set, GET /metrics serves
   #                                               # Prometheus metrics to `Authorization: Bearer <token>`
@@ -58,7 +58,7 @@ notifications:                 # Discord webhook, posted on both idle and night 
 #   crashes: 3
 #   window_minutes: 15
 
-users_file: /app/users.env     # <NAME>_PASSWORD_HASH entries; managed by `crowsnest set-password`
+users_file: /app/data/users.env     # <NAME>_PASSWORD_HASH entries; managed by `crowsnest set-password`
 
 # How people sign in. With no auth section, only username/password (users_file) is used.
 # auth:

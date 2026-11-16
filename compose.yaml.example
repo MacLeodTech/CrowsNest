@@ -69,8 +69,8 @@ services:
       - CROWSNEST_GOOGLE_CLIENT_SECRET=${CROWSNEST_GOOGLE_CLIENT_SECRET:-}
       - CROWSNEST_GOOGLE_USERS=${CROWSNEST_GOOGLE_USERS:-}
     # Hardening: CrowsNest runs as a non-root user, needs no Linux
-    # capabilities (port 5000, no raw sockets), and only writes users.env and
-    # the session secret (both bind mounts) plus /tmp.
+    # capabilities (port 5000, no raw sockets), and only writes under /app/data (users.env,
+    # the session secret, settings: one writable folder) plus /tmp.
     read_only: true
     tmpfs:
       - /tmp:size=16m,mode=1777
@@ -89,14 +89,13 @@ services:
       - "${DOCKER_GID:-999}"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./users.env:/app/users.env
-      - ./session_secret:/app/.session_secret
-      # Settings saved from the dashboard. A directory, not a file, and writable by uid 1000
+      # Everything CrowsNest writes: users.env, the session secret and the dashboard's settings. A directory, not
+      # single files: it replaces each file through a temp file next to it, which a file bind mount can't allow
+      # (the panel would fail with "read-only file system"). Writable by uid 1000
       # (`mkdir -p ${USERDIR}/crowsnest/config && chown 1000 ${USERDIR}/crowsnest/config`).
       - ${USERDIR}/crowsnest/config:/app/data
       # Shared backups folder (optional; see docs/backups.md): the host folder, read-write, one sub-folder per game.
       # - ${BACKUPS_DIR}:/game-backups
-      - ./compose.yaml:/data/compose.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock
     # depends_on:
     #   - dockerproxy
@@ -153,6 +152,8 @@ services:
   #   security_opt: ["no-new-privileges:true"]
   #   volumes:
   #     - ./config.yaml:/app/config.yaml:ro
+  #     # With `managed:` set in config.yaml, also mount what it names (the managed folder and the policy file),
+  #     # read-only, at the same paths as in crowsnest; execguard refuses to start without the policy file.
   #   networks: [crowsnest_front, crowsnest_back]
   # networks (top level):
   #   crowsnest_front: {}
