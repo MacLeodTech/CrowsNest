@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 // comparingCounter answers with primary and checks it against other, logging

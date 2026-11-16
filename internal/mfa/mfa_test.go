@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // RFC 6238 appendix B: the SHA-1 secret "12345678901234567890", 8 digits there; the

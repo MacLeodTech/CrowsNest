@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // allowedFile is the modules the operator switched on. The guard reads it

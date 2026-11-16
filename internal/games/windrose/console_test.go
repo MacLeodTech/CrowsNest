@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/games"
 )
 
 func TestConsole_ActionsSendWpCommands(t *testing.T) {

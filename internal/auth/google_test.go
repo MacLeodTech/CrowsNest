@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 	"net/http"
 	"net/http/httptest"
 	"net/url"

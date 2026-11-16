@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 const moduleUsage = `usage:

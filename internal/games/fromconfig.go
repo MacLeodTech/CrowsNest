@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
 )
 
 // FromConfig builds one GameDef per configured game, wired with the Phase 3

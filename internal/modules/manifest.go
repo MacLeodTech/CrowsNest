@@ -3,7 +3,7 @@ package modules
 import (
 	"bytes"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
 	"io"
 	"log"
 	"os"
@@ -15,10 +15,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/logtrack"
-	"github.com/fiddler110/crowsnest/internal/probes"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/logtrack"
+	"github.com/macleodtech/crowsnest/internal/probes"
 )
 
 // APIVersion is the module.yaml schema major version this build understands.

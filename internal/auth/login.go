@@ -3,7 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/audit"
 	"log"
 	"net"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/mfa"
+	"github.com/macleodtech/crowsnest/internal/mfa"
 )
 
 // dummyHash is compared against on an unknown username so that a login

@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // runGuard serves the scoped Docker API guard: crowsnest's docker_host points

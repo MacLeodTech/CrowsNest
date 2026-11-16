@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/rcon"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/rcon"
 )
 
 // RCONActions is games.Console for fixed admin actions that run as RCON

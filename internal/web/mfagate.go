@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 // mfaExempt are the paths an admin may use before setting up an authenticator app: their Account page and what it

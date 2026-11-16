@@ -2,13 +2,13 @@ package modules
 
 import (
 	"encoding/json"
-	"github.com/fiddler110/crowsnest/internal/gamefiles"
+	"github.com/macleodtech/crowsnest/internal/gamefiles"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
 	"gopkg.in/yaml.v3"
 )
 

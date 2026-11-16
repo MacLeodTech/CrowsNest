@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/config"
 )
 
 func stateConfig(t *testing.T) (*config.Config, string) {

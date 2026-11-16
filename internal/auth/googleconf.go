@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // Where a Google setting comes from.

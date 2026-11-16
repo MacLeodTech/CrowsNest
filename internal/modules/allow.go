@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/dockerguard"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
 )
 
 // SignedAllowances is what the guard takes from allowed modules that were installed from a URL. A module counts only

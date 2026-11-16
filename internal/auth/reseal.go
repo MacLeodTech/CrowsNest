@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // The Reseal functions re-encrypt one sealed file under another vault (a new master key, or the same key's newer

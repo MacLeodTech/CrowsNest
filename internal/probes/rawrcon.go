@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/rcon"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/rcon"
 )
 
 // RawRCON is the admin-only raw console over RCON (games.RawConsole).

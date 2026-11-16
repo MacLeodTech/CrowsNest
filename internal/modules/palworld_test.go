@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/dockerctl"
-	"github.com/fiddler110/crowsnest/internal/dockerctl/dockertest"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/probes"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/probes"
 )
 
 func fakeDocker(t *testing.T, running bool) *dockerctl.Client {

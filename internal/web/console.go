@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/audit"
 	"net/http"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/history"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fiddler110/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"os"
 	"strings"
 	"sync"
@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 const (

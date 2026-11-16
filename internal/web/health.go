@@ -2,12 +2,12 @@ package web
 
 import (
 	"context"
-	"github.com/fiddler110/crowsnest/internal/notify"
+	"github.com/macleodtech/crowsnest/internal/notify"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/hoststats"
+	"github.com/macleodtech/crowsnest/internal/hoststats"
 )
 
 // handleHost reports host memory, load and disk space.

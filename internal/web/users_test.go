@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/mfa"
-	"github.com/fiddler110/crowsnest/internal/notify"
-	"github.com/fiddler110/crowsnest/internal/settings"
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/mfa"
+	"github.com/macleodtech/crowsnest/internal/notify"
+	"github.com/macleodtech/crowsnest/internal/settings"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 func TestUsersAPI(t *testing.T) {

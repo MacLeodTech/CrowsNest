@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 // oidcView is one provider as the settings page sees it: never the secret.

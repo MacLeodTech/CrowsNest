@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/modules"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/modules"
 )
 
 // Installing a module from a URL from the dashboard. It is deliberately narrower than the command line:

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/games"
-	"github.com/fiddler110/crowsnest/internal/probes"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/probes"
 )
 
 // sections splits testdata/source_status.txt ("== name ==" headers).

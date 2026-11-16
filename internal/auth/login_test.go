@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/mfa"
+	"github.com/macleodtech/crowsnest/internal/mfa"
 )
 
 func newTestService(t *testing.T) *Service {

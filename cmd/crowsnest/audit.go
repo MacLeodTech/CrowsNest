@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/fiddler110/crowsnest/internal/audit"
-	"github.com/fiddler110/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/config"
 )
 
 const auditUsage = `usage:

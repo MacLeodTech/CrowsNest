@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/history"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/history"
 )
 
 const (

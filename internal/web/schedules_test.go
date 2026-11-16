@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fiddler110/crowsnest/internal/schedule"
+	"github.com/macleodtech/crowsnest/internal/schedule"
 )
 
 func TestSchedulesAPI(t *testing.T) {

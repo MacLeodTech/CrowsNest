@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fiddler110/crowsnest/internal/auth"
-	"github.com/fiddler110/crowsnest/internal/config"
-	"github.com/fiddler110/crowsnest/internal/managed"
-	"github.com/fiddler110/crowsnest/internal/mfa"
-	"github.com/fiddler110/crowsnest/internal/vault"
+	"github.com/macleodtech/crowsnest/internal/auth"
+	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/managed"
+	"github.com/macleodtech/crowsnest/internal/mfa"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // NewKeyEnv names the variable that holds the master key to move to.

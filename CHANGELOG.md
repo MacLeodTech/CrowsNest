@@ -9,6 +9,13 @@ Newest first within each part. Design detail for the modular-games rework is in
 - [x] **`crowsnest set-games <user> [ids]` (done 2026-11-16).** Limits a user to the listed games, or with no list
   lifts the limit. It uses the same stored allowlist as the Users tab, and a running server picks it up within seconds.
 
+## Moved to the MacLeodTech org
+
+- [x] **Images now publish to `ghcr.io/macleodtech/…` (2026-11-16).** The repo moved to the MacLeodTech org, whose
+  name is mixed-case; `cosign sign` rejects an uppercase registry reference, so `publish.yml` lowercases the image
+  names first. Compose files and docs point at the new path. Releases up to v0.16.9 stay under `ghcr.io/fiddler110/…`. The Go module path is now
+  `github.com/macleodtech/crowsnest`.
+
 ## Guard image (R24)
 
 - [x] **The guard runs its own minimal image (done 2026-11-16, v0.16.9).** `ghcr.io/<owner>/crowsnest-guard` is the
