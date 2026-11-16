@@ -9,20 +9,27 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Spec is one editable file of a game, as the module declares it.
 type Spec struct {
 	ID    string `yaml:"id" json:"id"`
 	Label string `yaml:"label" json:"label"`
-	// Path is absolute, inside the container.
+	// Path is absolute, inside the container. It may hold * (one path segment each, no ? or []) when the folder
+	// has a name only the game knows, such as a world id: it must then match exactly one file, or the editor
+	// says how many it found. A file that does not exist yet cannot be created through a pattern.
 	Path string `yaml:"path" json:"path"`
 	// MaxBytes caps the file (default 65536, at most 1 MiB).
 	MaxBytes int `yaml:"max_bytes" json:"max_bytes"`
@@ -88,8 +95,10 @@ func checkPath(p string) error {
 	switch {
 	case !strings.HasPrefix(p, "/") || strings.HasSuffix(p, "/"):
 		return errors.New("path must be an absolute path to a file")
-	case strings.ContainsAny(p, "\x00\n\r*?[]{}$`\\\"'") || strings.Contains(p, ".."):
-		return errors.New("path has characters that are not allowed (no .., globs or quotes)")
+	case strings.ContainsAny(p, "\x00\n\r ?[]{}$`\\\"'") || strings.Contains(p, ".."):
+		return errors.New("path has characters that are not allowed (no .., spaces, quotes, or globs other than *)")
+	case strings.HasSuffix(p, "*") || strings.HasPrefix(p, "/*"):
+		return errors.New("a * must sit inside the path, not at its very start or end, so a pattern cannot reach everything")
 	case strings.Contains(p, "//"):
 		return errors.New("path must not contain //")
 	}
@@ -101,12 +110,28 @@ func checkPath(p string) error {
 	return nil
 }
 
+// IsPattern reports whether Path has a * in it.
+func (s Spec) IsPattern() bool { return strings.Contains(s.Path, "*") }
+
+// resolve sets p to the one file the pattern in $1 matches, or stops with exit 3 and says how many it found. The
+// pattern comes from the module, never from a request, and has no space or quote in it, so the unquoted $1 only globs.
+const resolve = `n=0; for f in $1; do if [ -f "$f" ]; then n=$((n+1)); p=$f; fi; done; [ "$n" -eq 1 ] || { echo "$n files match $1, need exactly 1" >&2; exit 3; }; `
+
+const (
+	readPatternScript        = resolve + `head -c "$2" -- "$p"`
+	writePatternScript       = resolve + `t="$p.crowsnest-tmp"; cp -p -- "$p" "$t" && cat > "$t" && mv -f -- "$t" "$p"`
+	helperWritePatternScript = resolve + `t="$p.crowsnest-tmp"; cp -p -- "$p" "$t" && printf '%s' "$` + ContentEnv + `" > "$t" && mv -f -- "$t" "$p"`
+)
+
 // readScript prints the file, or nothing if it does not exist yet (saving then creates it). It reads one byte more
 // than the limit so "too large" can be told from "exactly full".
 const readScript = `[ -e "$1" ] || exit 0; head -c "$2" -- "$1"`
 
 // ReadArgs is the exact command that prints the file.
 func (s Spec) ReadArgs() []string {
+	if s.IsPattern() {
+		return []string{"sh", "-c", readPatternScript, "sh", s.Path, strconv.Itoa(s.MaxBytes + 1)}
+	}
 	return []string{"sh", "-c", readScript, "sh", s.Path, strconv.Itoa(s.MaxBytes + 1)}
 }
 
@@ -116,6 +141,9 @@ const writeScript = `t="$1.crowsnest-tmp"; { [ ! -e "$1" ] || cp -p -- "$1" "$t"
 
 // WriteArgs is the exact command that replaces the file with its standard input.
 func (s Spec) WriteArgs() []string {
+	if s.IsPattern() {
+		return []string{"sh", "-c", writePatternScript, "sh", s.Path}
+	}
 	return []string{"sh", "-c", writeScript, "sh", s.Path}
 }
 
@@ -132,6 +160,9 @@ func (s Spec) HelperReadArgs() []string { return s.ReadArgs() }
 
 // HelperWriteArgs: see HelperReadArgs. The content travels in ContentEnv.
 func (s Spec) HelperWriteArgs() []string {
+	if s.IsPattern() {
+		return []string{"/bin/sh", "-c", helperWritePatternScript, "sh", s.Path}
+	}
 	return []string{"/bin/sh", "-c", helperWriteScript, "sh", s.Path}
 }
 
@@ -155,15 +186,75 @@ func CheckText(b []byte) error {
 	return nil
 }
 
-// ErrInvalidJSON is returned when a .json file would be saved with a syntax error.
-var ErrInvalidJSON = errors.New("invalid JSON")
+// ErrInvalidSyntax is returned when a .json, .yaml, .yml or .xml file would be saved with a syntax error.
+var ErrInvalidSyntax = errors.New("invalid syntax")
 
-// CheckSyntax refuses content that cannot be what the file's name says it is. Only .json is checked: a game that
-// reads JSON stops at the first typo, so catching it here saves a crash loop. Anything else passes.
+// CheckSyntax refuses content that cannot be what the file's name says it is. JSON, YAML and XML are checked
+// strictly: a game that reads one of these stops at the first typo, so catching it here saves a crash loop. INI files
+// get only the mistakes no reader accepts (see checkINI). Other formats (.properties, plain lists) have no strict
+// grammar and pass.
 func (s Spec) CheckSyntax(content string) error {
-	if !strings.HasSuffix(strings.ToLower(s.Path), ".json") || strings.TrimSpace(content) == "" {
+	if strings.TrimSpace(content) == "" {
 		return nil
 	}
+	switch strings.ToLower(path.Ext(s.Path)) {
+	case ".json":
+		return checkJSON(content)
+	case ".yaml", ".yml":
+		return checkYAML(content)
+	case ".xml":
+		return checkXML(content)
+	case ".ini":
+		return checkINI(content)
+	}
+	return nil
+}
+
+// checkINI is deliberately loose, since INI has no standard (Unreal's has "+Key=" lines, some readers allow bare keys).
+// It refuses a section header that is never closed, a line that starts with "=", and a value that opens a "(" group
+// (Unreal style, as in Palworld's OptionSettings) and never closes it. Quoted text is skipped when counting.
+func checkINI(content string) error {
+	for i, line := range strings.Split(content, "\n") {
+		l := strings.TrimSpace(strings.TrimSuffix(line, "\r"))
+		if l == "" || l[0] == ';' || l[0] == '#' {
+			continue
+		}
+		bad := func(msg string) error { return fmt.Errorf("%w in INI: %s (line %d)", ErrInvalidSyntax, msg, i+1) }
+		if l[0] == '[' {
+			if !strings.Contains(l, "]") {
+				return bad("section header is missing its closing ]")
+			}
+			continue
+		}
+		if l[0] == '=' {
+			return bad("a line cannot start with =")
+		}
+		_, val, ok := strings.Cut(l, "=")
+		if !ok {
+			continue
+		}
+		if val = strings.TrimSpace(val); strings.HasPrefix(val, "(") {
+			depth, quoted := 0, false
+			for _, c := range val {
+				switch {
+				case c == '"':
+					quoted = !quoted
+				case quoted:
+				case c == '(':
+					depth++
+				case c == ')':
+					depth--
+				}
+			}
+			if depth != 0 || quoted {
+				return bad("a ( group or quote is never closed")
+			}
+		}
+	}
+	return nil
+}
+
+func checkJSON(content string) error {
 	var v any
 	err := json.Unmarshal([]byte(content), &v)
 	var se *json.SyntaxError
@@ -179,9 +270,39 @@ func (s Spec) CheckSyntax(content string) error {
 				col++
 			}
 		}
-		return fmt.Errorf("%w: %s (line %d, column %d)", ErrInvalidJSON, se.Error(), line, col)
+		return fmt.Errorf("%w in JSON: %s (line %d, column %d)", ErrInvalidSyntax, se.Error(), line, col)
 	default:
-		return fmt.Errorf("%w: %s", ErrInvalidJSON, err.Error())
+		return fmt.Errorf("%w in JSON: %s", ErrInvalidSyntax, err.Error())
+	}
+}
+
+func checkYAML(content string) error {
+	dec := yaml.NewDecoder(strings.NewReader(content))
+	for {
+		var n yaml.Node
+		err := dec.Decode(&n)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%w in YAML: %s", ErrInvalidSyntax, strings.TrimPrefix(err.Error(), "yaml: "))
+		}
+	}
+}
+
+func checkXML(content string) error {
+	dec := xml.NewDecoder(strings.NewReader(content))
+	dec.Strict = true
+	// Entities such as &nbsp; that are not declared in the file would otherwise fail a file the game accepts.
+	dec.Entity = xml.HTMLEntity
+	for {
+		_, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%w in XML: %s", ErrInvalidSyntax, err.Error())
+		}
 	}
 }
 

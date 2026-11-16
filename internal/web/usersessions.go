@@ -20,7 +20,7 @@ func (a *App) handleUserSessions(w http.ResponseWriter, r *http.Request) {
 	name := strings.ToLower(r.PathValue("name"))
 	out := []profileSession{}
 	for _, rec := range reg.List(name) {
-		out = append(out, profileSession{ID: rec.ID, Device: describeDevice(rec.UserAgent), IP: rec.IP,
+		out = append(out, profileSession{ID: rec.ID, Device: describeDevice(rec.UserAgent), Label: rec.Label, IP: rec.IP,
 			Created: rec.Created.UTC().Format(time.RFC3339), LastSeen: rec.LastSeen.UTC().Format(time.RFC3339), UserAgent: rec.UserAgent})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"username": name, "sessions": out})

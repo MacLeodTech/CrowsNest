@@ -336,7 +336,7 @@ loaders.users = () => {
       sessions.forEach((s) => {
         const row = document.createElement("li");
         const label = document.createElement("span");
-        label.textContent = `${s.device}${s.ip ? " (" + s.ip + ")" : ""}, last seen ${new Date(s.last_seen).toLocaleString()}`;
+        label.textContent = `${s.label ? s.label + " · " : ""}${s.device}${s.ip ? " (" + s.ip + ")" : ""}, last seen ${new Date(s.last_seen).toLocaleString()}`;
         label.title = s.user_agent || "";
         const b = document.createElement("button");
         b.type = "button";

@@ -106,32 +106,50 @@ func (m *Manager) release(id string) {
 // backed up from outside, so that is refused with ErrNoSafetyBackup unless
 // withoutBackup says the caller accepted losing the current world.
 func (m *Manager) Request(ctx context.Context, d games.GameDef, file, actor string, withoutBackup bool) error {
-	if d.Backup == nil || !d.Backup.CanRestore || d.Backup.LocalDir == "" || m.Spec == nil {
+	if d.Backup == nil || !d.Backup.CanRestore || m.Spec == nil {
 		return ErrNotConfigured
 	}
 	if !fileRe.MatchString(file) {
 		return ErrBadFile
 	}
-	if _, ok := m.Spec(d.ID, file); !ok {
+	if _, ok := m.spec(d, file); !ok {
 		return ErrNotConfigured
-	}
-	idx, err := m.Backups.Locate(d, file)
-	switch {
-	case errors.Is(err, backup.ErrNoSuchFile):
-		return ErrBadFile
-	case err != nil:
-		return err
 	}
 	up, err := m.Docker.Running(ctx, d.ContainerName)
 	if err != nil {
 		return err
+	}
+	idx := -1
+	switch {
+	case d.Backup.LocalDir != "":
+		idx, err = m.Backups.Locate(d, file)
+		switch {
+		case errors.Is(err, backup.ErrNoSuchFile):
+			return ErrBadFile
+		case err != nil:
+			return err
+		}
+	case up:
+		// A game set up by hand lists its backups over exec, which needs it running.
+		files, err := m.Backups.List(ctx, d)
+		if err != nil {
+			return err
+		}
+		for i, f := range files {
+			if f.Name == file {
+				idx = i
+			}
+		}
+		if idx < 0 {
+			return ErrBadFile
+		}
 	}
 	if !up && !withoutBackup {
 		return ErrNoSafetyBackup
 	}
 	// The safety backup is a new file, and keep then prunes the oldest ones:
 	// refuse rather than delete the very file being restored.
-	if up && d.Backup.Keep > 0 && idx+1 >= d.Backup.Keep {
+	if up && d.Backup.Keep > 0 && idx >= 0 && idx+1 >= d.Backup.Keep {
 		return fmt.Errorf("%w (it is number %d of %d kept)", ErrWouldPrune, idx+1, d.Backup.Keep)
 	}
 	if m.Backups.Running(d.ID) || !m.claim(d.ID) {
@@ -149,6 +167,38 @@ func (m *Manager) Request(ctx context.Context, d games.GameDef, file, actor stri
 	}()
 	return nil
 }
+
+// spec is the restore container for file: the module's for a dashboard game, or
+// the one built from the game's own config for a game set up by hand in
+// config.yaml. That one runs the configured command in the game's own image (read
+// from its container) with only the configured folders and no network, as the
+// guard scope <id>-restore the operator wrote must allow.
+func (m *Manager) spec(d games.GameDef, file string) (dockerctl.CreateSpec, bool) {
+	if s, ok := m.Spec(d.ID, file); ok {
+		return s, true
+	}
+	b := d.Backup
+	if b == nil || len(b.RestoreCmd) == 0 || len(b.RestoreBinds) == 0 || b.Dir == "" || b.LocalDir != "" {
+		return dockerctl.CreateSpec{}, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	image, err := m.Docker.Image(ctx, d.ContainerName)
+	if err != nil {
+		log.Printf("restore: %s: reading its image: %v", d.ID, err)
+		return dockerctl.CreateSpec{}, false
+	}
+	binds := make([]string, len(b.RestoreBinds))
+	copy(binds, b.RestoreBinds)
+	return dockerctl.CreateSpec{
+		Name: d.ID + RestoreSuffix, Image: image, Network: "none", Binds: binds,
+		Entrypoint: b.RestoreCmd, NoRestart: true,
+		Env: []string{"CROWSNEST_RESTORE_FILE=" + strings.TrimRight(b.Dir, "/") + "/" + file},
+	}, true
+}
+
+// RestoreSuffix names a game's restore container: <id>-restore.
+const RestoreSuffix = "-restore"
 
 // hold claims the game against backups, waiting briefly for one that started
 // while the game was stopping.
@@ -210,7 +260,7 @@ func (m *Manager) run(ctx context.Context, d games.GameDef, file, actor string, 
 		return
 	}
 	defer release()
-	spec, ok := m.Spec(d.ID, file)
+	spec, ok := m.spec(d, file)
 	if !ok {
 		fail("preparing the restore", ErrNotConfigured)
 		return

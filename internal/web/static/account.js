@@ -137,12 +137,23 @@ async function loadSessions() {
     li.className = "session-row";
     const info = document.createElement("div");
     const title = document.createElement("b");
-    title.textContent = s.device + (s.current ? " (this device)" : "");
+    title.textContent = (s.label || s.device) + (s.current ? " (this device)" : "");
     if (s.user_agent) title.title = s.user_agent;
     const meta = document.createElement("small");
     meta.textContent = `${s.ip ? s.ip + " · " : ""}signed in ${when(s.created)} · last seen ${when(s.last_seen)}`;
     info.append(title, document.createElement("br"), meta);
     li.append(info);
+    const rn = document.createElement("button");
+    rn.type = "button"; rn.className = "btn btn-ghost"; rn.textContent = "Rename";
+    rn.addEventListener("click", async () => {
+      const name = window.prompt("Name this device (leave empty to clear):", s.label || "");
+      if (name === null) return;
+      const res = await callAPI("/api/account/sessions/rename", { method: "POST", body: JSON.stringify({ id: s.id, label: name }) });
+      if (!res.ok) { showSessionsError(await errorText(res)); return; }
+      showSessionsError("");
+      loadSessions();
+    });
+    li.append(rn);
     if (!s.current) {
       const b = document.createElement("button");
       b.type = "button"; b.className = "btn btn-ghost"; b.textContent = "Sign out";

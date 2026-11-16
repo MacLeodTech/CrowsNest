@@ -81,16 +81,15 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### B. Accounts and settings (open)
 
-- [ ] **Profile page:** email/avatar and naming a device.
-- [ ] **Sign-in:** editing the `name=email` env allowlist.
-- [ ] **Backups:** a restore for config-file games; try each restore command on a real world; config-file games still back up
-  inside their own data and would need the bind added by hand.
-- [ ] **File editing, next steps:** validation for formats other than JSON, and `files:` for
+- [ ] **Backups:** try each restore command on a real world, including the new config-file restore on prod Palworld
+  (needs the `palworld-restore` guard scope and `restore_binds`); config-file games still back up inside their own data
+  and would need the bind added by hand.
+- [ ] **File editing, next steps:** `files:` for
   Source, Don't Starve Together and 7 Days to Die. **Palworld:** its image rebuilds the whole
   `PalWorldSettings.ini` from environment variables on every start, so nothing declared there would last; it needs
   the module to set `DISABLE_GENERATE_SETTINGS=true` (after which the form options stop applying to the file) or a
-  per-setting editor. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) need a glob or directory form
-  of `files:`. A settings editor in the module form, with named fields, would serve both games better than raw files.
+  per-setting editor. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can now use a `*` path
+  (done); the module still needs writing once the layout is read off a real container. A settings editor in the module form, with named fields, would serve both games better than raw files.
   A stopped-game edit for games set up in `config.yaml`.
 - [ ] Crash-loop detection is untested against a real crashing container (also in track C).
 

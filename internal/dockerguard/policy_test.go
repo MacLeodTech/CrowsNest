@@ -149,7 +149,13 @@ func TestSourcesLoadAndWatch(t *testing.T) {
 	managed := filepath.Join(dir, "scopes.json")
 	write := func(path, s string) {
 		t.Helper()
-		if err := os.WriteFile(path, []byte(s), 0o600); err != nil {
+		// Write through a rename so the watcher never reads a half-written (empty) file,
+		// which would be a valid "no managed scopes" state and make the test flaky.
+		tmp := path + ".tmp"
+		if err := os.WriteFile(tmp, []byte(s), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Rename(tmp, path); err != nil {
 			t.Fatal(err)
 		}
 	}

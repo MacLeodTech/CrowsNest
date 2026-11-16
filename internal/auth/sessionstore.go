@@ -4,11 +4,15 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 // SessionRecord is one signed-in device, kept on the server so it can be listed and ended on its own. The cookie
@@ -21,6 +25,8 @@ type SessionRecord struct {
 	Expires   time.Time `json:"expires"`
 	UserAgent string    `json:"user_agent,omitempty"`
 	IP        string    `json:"ip,omitempty"`
+	// Label is a name the person gave this device ("Work laptop"); empty shows the browser description.
+	Label string `json:"label,omitempty"`
 }
 
 // touchEvery is how often a request moves a session's last-seen time (and so how often the store is written).
@@ -141,6 +147,30 @@ func (s *SessionStore) Revoke(user, id string) (bool, error) {
 		return false, nil
 	}
 	delete(s.recs, id)
+	return true, s.flushLocked(time.Now())
+}
+
+// MaxLabelLen caps a device name, in characters.
+const MaxLabelLen = 40
+
+// SetLabel names one of user's sessions ("" clears the name). It reports whether there was one.
+func (s *SessionStore) SetLabel(user, id, label string) (bool, error) {
+	label = strings.TrimSpace(label)
+	if utf8.RuneCountInString(label) > MaxLabelLen {
+		return false, fmt.Errorf("a device name is at most %d characters", MaxLabelLen)
+	}
+	for _, c := range label {
+		if unicode.IsControl(c) {
+			return false, errors.New("a device name cannot contain control characters")
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.recs[id]
+	if !ok || r.User != user {
+		return false, nil
+	}
+	r.Label = label
 	return true, s.flushLocked(time.Now())
 }
 

@@ -126,6 +126,10 @@ games:
     #   list_dir: /palworld/backups
     #   keep: 14                      # optional: after each backup, delete all but the newest 14 files in list_dir
     #   before_stop: true      # also back up every time CrowsNest stops it on purpose
+    #   # Restore button: a one-shot container from the game's own image runs this with no network,
+    #   # $CROWSNEST_RESTORE_FILE set to the chosen backup. Needs a guard scope named <id>-restore (docs/backups.md).
+    #   restore: ["/bin/sh", "-c", "..."]
+    #   restore_binds: ["/srv/palworld/data:/palworld"]   # must hold list_dir
 
 # Enable and configure games from the dashboard, inside an operator policy
 # (see docs/modules.md and policy.yaml.example). Needs platform.games_root.
