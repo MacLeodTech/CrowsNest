@@ -15,6 +15,18 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath -ldflags="-s -w" -o /out/crowsnest ./cmd/crowsnest
 
+# Optional stage: the guard on its own (`docker build --target guard`). The guard holds the Docker socket, so this
+# image is the static binary and nothing else: no shell, no package manager, no certificates (the guard never
+# dials out). It sits before the runtime stage so the default build (the last stage) is unchanged. Use `command: ["guard", ...]` as with the main image, and
+# `healthcheck: test: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]`.
+FROM scratch AS guard
+COPY --from=build /out/crowsnest /app/crowsnest
+USER 1000:1000
+WORKDIR /app
+EXPOSE 2375
+ENTRYPOINT ["/app/crowsnest"]
+CMD ["guard", "--listen", ":2375"]
+
 # Stage 2: minimal runtime image.
 FROM alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
 RUN apk upgrade --no-cache && apk add --no-cache ca-certificates tzdata

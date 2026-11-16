@@ -123,6 +123,9 @@ func main() {
 		}
 		os.Exit(runDoctor(cfg, &dockerctl.Client{Host: cfg.Server.DockerHost}, os.Stdout))
 	case "healthcheck":
+		if len(os.Args) > 2 { // `healthcheck URL`: a guard-only image has no wget to probe the guard's /_ping
+			os.Exit(probe(os.Args[2]))
+		}
 		os.Exit(healthcheck())
 	case "set-password":
 		if len(os.Args) < 3 {
@@ -782,8 +785,13 @@ func healthcheck() int {
 		addr = healthcheckAddr(cfg.Server.Addr)
 	}
 
+	return probe("http://" + addr + "/healthz")
+}
+
+// probe does one HTTP GET and returns 0 when it answers 200.
+func probe(url string) int {
 	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get("http://" + addr + "/healthz")
+	resp, err := client.Get(url)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -791,7 +799,7 @@ func healthcheck() int {
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "healthz returned %d\n", resp.StatusCode)
+		fmt.Fprintf(os.Stderr, "%s returned %d\n", url, resp.StatusCode)
 		return 1
 	}
 	return 0

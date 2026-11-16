@@ -270,3 +270,13 @@ func TestSetRole(t *testing.T) {
 		t.Fatal("setRole accepted an unknown user")
 	}
 }
+
+func TestProbeURL(t *testing.T) {
+	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }))
+	defer ok.Close()
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }))
+	defer bad.Close()
+	if probe(ok.URL) != 0 || probe(bad.URL) != 1 || probe("http://127.0.0.1:1/") != 1 {
+		t.Error("probe should be 0 for 200 and 1 for an error status or no answer")
+	}
+}
