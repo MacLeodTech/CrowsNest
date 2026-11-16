@@ -276,7 +276,20 @@ func TestProbeURL(t *testing.T) {
 	defer ok.Close()
 	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }))
 	defer bad.Close()
-	if probe(ok.URL) != 0 || probe(bad.URL) != 1 || probe("http://127.0.0.1:1/") != 1 {
-		t.Error("probe should be 0 for 200 and 1 for an error status or no answer")
+	if probeArg(ok.URL+"/_ping") != 0 || probeArg(bad.URL+"/_ping") != 1 || probeArg("http://127.0.0.1:1/_ping") != 1 {
+		t.Error("probeArg should be 0 for 200 and 1 for an error status or no answer")
+	}
+	for _, refused := range []string{
+		"http://example.com:80/_ping",      // not loopback
+		"http://169.254.169.254:80/_ping",  // metadata address
+		"https://127.0.0.1:2375/_ping",     // not plain http
+		"http://u:p@127.0.0.1:2375/_ping",  // credentials
+		"http://127.0.0.1/_ping",           // no port
+		"http://127.0.0.1:2375/etc/passwd", // path not allowed
+		"not a url",
+	} {
+		if probeArg(refused) != 1 {
+			t.Errorf("probeArg(%q) should be refused", refused)
+		}
 	}
 }
