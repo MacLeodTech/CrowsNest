@@ -105,6 +105,8 @@ unmounted-drive refusal. **Restoring from offsite** is a copy back: `rclone copy
   To accept a different drive on purpose, delete `backups-root` and restart. `crowsnest doctor` reports it. Bind
   the drive's mount point rather than a folder on it, and start Docker after the drive is mounted
   (`RequiresMountsFor=` in the Docker unit, or an fstab `x-systemd.before=docker.service` style ordering).
+  `crowsnest doctor` also warns when `backups_mount` is not a bind mount at all (read from `/proc/self/mountinfo`): then
+  the folder is part of the container and its backups disappear when the container is recreated.
 - **Permissions.** The panel (uid 1000) creates each game's folder with `backups_dir_mode` (default `0775`). A
   game whose own user is someone else gets "permission denied" from its backup command. Either chown the folder to
   that user on the host, run the game as the panel's uid, or set `backups_dir_mode: "0777"`. `doctor` says which mode

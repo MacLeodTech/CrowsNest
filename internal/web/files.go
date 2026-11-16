@@ -41,7 +41,7 @@ func (a *App) fileError(w http.ResponseWriter, d games.GameDef, err error) {
 		http.Error(w, "The file changed since you opened it (the game may have rewritten it). Reload it and make your change again.", http.StatusConflict)
 	case errors.Is(err, gamefiles.ErrNotRunning):
 		http.Error(w, "The game is stopped and this file can only be edited while it runs. Start the game first.", http.StatusConflict)
-	case errors.Is(err, gamefiles.ErrTooLarge), errors.Is(err, gamefiles.ErrNotText), errors.Is(err, gamefiles.ErrHiddenValue):
+	case errors.Is(err, gamefiles.ErrTooLarge), errors.Is(err, gamefiles.ErrNotText), errors.Is(err, gamefiles.ErrHiddenValue), errors.Is(err, gamefiles.ErrInvalidJSON):
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	default:
 		log.Printf("web: files %s: %v", d.ID, err)

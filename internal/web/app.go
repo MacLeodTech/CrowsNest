@@ -313,6 +313,8 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.Handle("POST /api/users", a.requireAdmin(http.HandlerFunc(a.handleCreateUser)))
 	mux.Handle("PUT /api/users/{name}", a.requireAdmin(http.HandlerFunc(a.handleUpdateUser)))
 	mux.Handle("DELETE /api/users/{name}", a.requireAdmin(http.HandlerFunc(a.handleDeleteUser)))
+	mux.Handle("GET /api/users/{name}/sessions", a.requireAdminRead(http.HandlerFunc(a.handleUserSessions)))
+	mux.Handle("POST /api/users/{name}/sessions/revoke", a.requireAdmin(http.HandlerFunc(a.handleRevokeUserSession)))
 	mux.Handle("POST /api/games/{id}/start", a.requireSessionAndCSRF(http.HandlerFunc(a.handleStart)))
 	mux.Handle("POST /api/games/{id}/switch", a.requireSessionAndCSRF(http.HandlerFunc(a.handleSwitch)))
 	mux.Handle("POST /api/games/{id}/stop", a.requireSessionAndCSRF(http.HandlerFunc(a.handleStop)))

@@ -53,8 +53,7 @@ func (a *App) securityView(user string) securityView {
 		v.PasskeysAvail = true
 		v.PasskeyCount = a.Auth.Passkeys.Store.Count(user)
 	}
-	v.MFARequired = a.Settings != nil && a.MFA != nil && a.Settings.Get().RequireAdminMFA &&
-		a.Auth.Sessions.RoleFor(user) == auth.RoleAdmin && v.HasPassword && !v.TOTPEnabled && v.PasskeyCount == 0
+	v.MFARequired = a.mfaRequiredFor(user)
 	return v
 }
 

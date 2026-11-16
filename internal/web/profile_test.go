@@ -319,3 +319,69 @@ func TestAuditExportServesTheFileToAdmins(t *testing.T) {
 		t.Errorf("export = %q", body)
 	}
 }
+
+func TestAdminSeesAndEndsAnotherUsersSessions(t *testing.T) {
+	h, _, _ := profileHarness(t)
+	reg := h.App.Auth.Sessions.Registry
+	add := func(id, ua string) {
+		if err := reg.Add(auth.SessionRecord{ID: id, User: "gina", Created: time.Now(), LastSeen: time.Now(), Expires: time.Now().Add(time.Hour), UserAgent: ua, IP: "198.51.100.7"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("g1", "Mozilla/5.0 (iPhone; CPU iPhone OS 17) Safari/604.1")
+	add("g2", "Mozilla/5.0 (X11; Linux x86_64) Firefox/130.0")
+
+	list := func(name string) []profileSession {
+		rec := h.do(h.req(http.MethodGet, "/api/users/"+name+"/sessions", nil))
+		if rec.Code != 200 {
+			t.Fatalf("list %s = %d %s", name, rec.Code, rec.Body)
+		}
+		var out struct{ Sessions []profileSession }
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		return out.Sessions
+	}
+	got := list("gina")
+	if len(got) != 2 || got[0].IP != "198.51.100.7" {
+		t.Fatalf("gina's sessions = %+v", got)
+	}
+	if len(list("tester")) != 2 { // sees the same list for anyone; the page hides the button for yourself
+		t.Error("the list should work for any user")
+	}
+
+	post := func(name, body string) *httptest.ResponseRecorder {
+		return h.do(h.authedReq(http.MethodPost, "/api/users/"+name+"/sessions/revoke", []byte(body)))
+	}
+	if rec := post("gina", `{"id":"nope"}`); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown session = %d, want 404", rec.Code)
+	}
+	if rec := post("gina", `{}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("no target = %d, want 400", rec.Code)
+	}
+	if rec := post("gina", `{"id":"g1"}`); rec.Code != 200 {
+		t.Fatalf("revoke one = %d %s", rec.Code, rec.Body)
+	}
+	if left := list("gina"); len(left) != 1 || left[0].ID != "g2" {
+		t.Fatalf("after revoking one: %+v", left)
+	}
+	// One user's id never ends another's session.
+	if rec := post("gina", `{"id":"`+reg.List("tester")[0].ID+`"}`); rec.Code != http.StatusNotFound {
+		t.Errorf("another user's session id = %d, want 404", rec.Code)
+	}
+	if rec := post("tester", `{"all":true}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("revoking your own = %d, want 400 (use the Account page)", rec.Code)
+	}
+	if rec := post("gina", `{"all":true}`); rec.Code != 200 || len(list("gina")) != 0 {
+		t.Fatalf("revoke all = %d, left %d", rec.Code, len(list("gina")))
+	}
+
+	// Players cannot see or end anyone's sessions.
+	h.App.Auth.Sessions.Users = auth.Users{"tester": {Role: auth.RolePlayer}}
+	if rec := h.do(h.req(http.MethodGet, "/api/users/gina/sessions", nil)); rec.Code != http.StatusForbidden {
+		t.Errorf("player list = %d, want 403", rec.Code)
+	}
+	if rec := post("gina", `{"all":true}`); rec.Code != http.StatusForbidden {
+		t.Errorf("player revoke = %d, want 403", rec.Code)
+	}
+}

@@ -72,6 +72,10 @@ type Values struct {
 	// anything else (they can still reach their Account page).
 	RequireAdminMFA bool `json:"require_admin_mfa"`
 
+	// RequirePlayerMFA is the same for players. Anyone whose account is linked to Google or another OpenID
+	// Connect provider is not asked: the provider does the second factor.
+	RequirePlayerMFA bool `json:"require_player_mfa"`
+
 	// PerGame holds per-game overrides keyed by game id. A body that names a
 	// game replaces that game's entry (null or all-empty removes it); games it
 	// does not name are left alone.

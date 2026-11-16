@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/macleodtech/crowsnest/internal/atomicfile"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -135,17 +134,16 @@ type Users map[string]UserRecord
 // missing file is not an error — it means no users have been created yet
 // (run `crowsnest set-password <username>`).
 func LoadUsers(path string) (Users, error) {
-	f, err := os.Open(path) // #nosec G304 -- users_file path comes from the operator's config.yaml
+	text, err := readUsersText(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return Users{}, nil
-		}
-		return nil, fmt.Errorf("auth: read users file %s: %w", path, err)
+		return nil, err
 	}
-	defer f.Close()
+	if text == "" {
+		return Users{}, nil
+	}
 
 	users := Users{}
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(strings.NewReader(text))
 	lineNo := 0
 	for scanner.Scan() {
 		lineNo++
@@ -466,8 +464,12 @@ func writeUsers(path string, users Users) error {
 		}
 	}
 
+	text, err := sealUsersText(b.String())
+	if err != nil {
+		return fmt.Errorf("auth: seal users file %s: %w", path, err)
+	}
 	// Temp file + sync + rename so a crash never leaves a truncated users file.
-	if err := atomicfile.Write(path, []byte(b.String()), 0o600); err != nil {
+	if err := atomicfile.Write(path, []byte(text), 0o600); err != nil {
 		return fmt.Errorf("auth: write users file %s: %w", path, err)
 	}
 	return nil
