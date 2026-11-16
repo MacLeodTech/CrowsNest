@@ -43,7 +43,11 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 - [x] **Fix the templates for the bind-mount failure (#44):** put `users.env` and the session secret in the data folder in
   `compose.yaml.example`, `config.yaml.example` and `quickstart/`, mount `policy` into execguard, or make the writes
   fall back to in-place when the file is a mount.
-- [ ] **Try the signed-module Allow switch on a real guard** (mount the modules folder, add a key to `policy.yaml`, install a signed module, switch it on, start it).
+- [x] **Try the signed-module Allow switch on a real guard.** Done 2026-11-16 on the test stack in a browser: installed
+  Minecraft from the public URL, switched it on, added its image to `policy.yaml` on the host, added the game, started
+  and stopped it (healthy on the chosen port). Rough edge found: a game whose first image pull the guard refused
+  stays `failed` with a stale error, and neither "Update image" nor "Settings" retries it; the way out is Disable
+  and add it again. Worth a "Retry" on a failed card, or re-running the pull when the policy changes.
 - [ ] **Try Phase 6 on the real host:** start, stop, backup and a config-file edit through the guard against the
   production Palworld container (the real-Docker CI test covers exec through the guard with a busybox image only).
 - [ ] **Try passkeys in a real browser** (Windows Hello, a phone, a security key): the server side is tested with a software authenticator only.
