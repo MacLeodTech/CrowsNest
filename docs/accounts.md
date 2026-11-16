@@ -17,6 +17,9 @@ player, so promote yourself with `crowsnest set-role <you> admin` before relying
 warning at startup when no user resolves to admin). Role changes apply within seconds, and a demotion applies on the
 user's very next request.
 
+To limit a user to some games from the command line, run `crowsnest set-games <user> palworld,valheim`; with no list
+it lifts the limit, so the user may use every game. This is the same game allowlist as on the Users tab.
+
 ## Sessions
 
 A session is a signed cookie that lasts 3 hours without activity (`server.session_idle_minutes`, default 180).
