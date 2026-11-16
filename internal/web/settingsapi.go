@@ -116,6 +116,7 @@ func settingsChanges(before, after settings.Values) string {
 	add("max_active_games", before.MaxActiveGames, after.MaxActiveGames)
 	add("raw_console", before.RawConsole, after.RawConsole)
 	add("require_admin_mfa", before.RequireAdminMFA, after.RequireAdminMFA)
+	add("require_player_mfa", before.RequirePlayerMFA, after.RequirePlayerMFA)
 	ids := map[string]bool{}
 	for id := range before.PerGame {
 		ids[id] = true

@@ -83,7 +83,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 - [ ] **Profile page:** email/avatar, naming a device, and an admin view of other people's sessions.
 - [ ] **Sign-in:** editing the `name=email`
-  env allowlist, requiring MFA for players,
+  env allowlist,
   encrypting the users file.
 - [ ] **Backups:** a restore for config-file games; try each restore command on a real world; config-file games still back up
   inside their own data and would need the bind added by hand; an optional host-side mount check.

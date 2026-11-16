@@ -4,6 +4,12 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Require an authenticator app for players
+
+- [x] **Settings can require players to set up an authenticator app (done 2026-11-16).** Same rule as for admins,
+  with its own switch. A player linked to Google or another provider is exempt, since the provider does the second
+  step; a passkey also counts. One helper now decides it for both the gate and the Account page.
+
 ## New sign-in: Discord and a dashboard banner
 
 - [x] **A sign-in from a new device is announced (done 2026-11-16).** Besides the activity log and the Account page,

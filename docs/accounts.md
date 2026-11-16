@@ -132,8 +132,10 @@ password plus a code. An admin can reset someone's app from Users (a lost phone)
 password sign-in only: Google and OIDC sign-ins rely on the provider's own protections. It stays optional for each
 person unless an admin turns on **Settings, General, Require admins to set up an authenticator app**: then an admin who
 signs in with a password and has no app yet can reach only their Account page (pages redirect there, API calls get a
-403) until they enrol. Admins who sign in through Google or another provider are not asked. Not built: forcing
-players, and WebAuthn/passkeys.
+403) until they enrol. Admins who sign in through Google or another provider are not asked. **Require players who sign
+in with a password to set up an authenticator app too** does the same for players, except that a player linked to
+Google or another provider (a Google email or SSO email on their user, or a place on the Google allowlist) is never
+asked, because the provider does the second factor. A passkey also satisfies either setting.
 
 **What is encrypted on disk.** The Google and OIDC client secrets, TOTP secrets, game secrets (`secrets.json`) and the
 session-signing key are sealed with AES-256-GCM, each bound to its own field so a copied value won't open elsewhere.
