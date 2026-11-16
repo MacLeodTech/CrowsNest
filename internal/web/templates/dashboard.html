@@ -131,8 +131,10 @@
         <p class="files-note"></p>
         <div class="files-editor" hidden>
           <textarea class="files-text" rows="14" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="File contents"></textarea>
+          <p class="files-syntax" role="status" hidden></p>
           <div class="files-bar">
             <button class="btn btn-primary files-save" type="button">Save</button>
+            <button class="btn btn-ghost files-save-restart" type="button" hidden>Save and restart</button>
             <button class="btn btn-ghost files-reload" type="button">Reload</button>
             <select class="files-versions" aria-label="Earlier versions"></select>
             <button class="btn btn-ghost files-load-version" type="button">Load that version</button>
