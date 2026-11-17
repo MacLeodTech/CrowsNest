@@ -1200,6 +1200,19 @@ const filesState = {}; // game id -> { files, file, sha256, original }
 
 function filesNote(card, text) { card.querySelector(".files-note").textContent = text; }
 
+// Link to the module's documentation for the open file, when it gives one (https only; the server checks too).
+function filesDocs(card, f) {
+  const p = card.querySelector(".files-docs");
+  const a = p.querySelector("a");
+  const ok = f && typeof f.docs === "string" && /^https:\/\//.test(f.docs);
+  p.hidden = !ok;
+  if (!ok) { a.removeAttribute("href"); return; }
+  a.href = f.docs;
+  let host = f.docs;
+  try { host = new URL(f.docs).host; } catch (err) { /* keep the raw text */ }
+  a.textContent = `Documentation for ${f.label} (${host})`;
+}
+
 function lineDiff(a, b) {
   const count = (lines) => lines.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
   const ca = count(a.split("\n")), cb = count(b.split("\n"));
@@ -1339,6 +1352,7 @@ async function loadFiles(id) {
   const card = cardFor(id);
   const pick = card.querySelector(".files-pick");
   card.querySelector(".files-editor").hidden = true;
+  filesDocs(card, null);
   pick.replaceChildren();
   let data;
   try {
@@ -1374,6 +1388,7 @@ async function openFile(id, f) {
   const text = card.querySelector(".files-text");
   const st = filesState[id];
   editor.hidden = true;
+  filesDocs(card, f);
   filesNote(card, "Loading…");
   let data;
   try {

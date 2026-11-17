@@ -61,6 +61,7 @@ files:
     label: PalWorldSettings.ini
     path: /palworld/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini
     max_bytes: 32768
+    docs: https://docs.palworldgame.com/settings-and-operation/configuration
     restart: "Restart to apply it. It lasts only while 'Edit the settings file by hand' is true (turn that on after the first start); otherwise the image rewrites it from the form on every start."
     stop_first: true
     redact: ['AdminPassword="([^"]*)"', 'ServerPassword="([^"]*)"']

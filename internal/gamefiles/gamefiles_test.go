@@ -414,3 +414,23 @@ func TestPatternPathOnARealShell(t *testing.T) {
 		t.Fatalf("a file was touched although the pattern was ambiguous: %q", b)
 	}
 }
+
+func TestNormalizeDocsLink(t *testing.T) {
+	ok := []string{"", "https://docs.palworldgame.com/settings-and-operation/configuration", "https://minecraft.wiki/w/Server.properties#Java_Edition"}
+	for _, d := range ok {
+		got, err := Normalize([]Spec{{ID: "f", Path: "/data/f.ini", Docs: d}})
+		if err != nil || got[0].Docs != d {
+			t.Errorf("docs %q: got %+v, %v", d, got, err)
+		}
+	}
+	bad := []string{
+		"http://example.com/x", "javascript:alert(1)", "//example.com/x", "https://", "https://user:pw@example.com/x",
+		"https://example.com/a b", "https://example.com/\"onmouseover=x", "https://example.com/<script>", "/relative/path",
+		"https://example.com/" + strings.Repeat("a", 300),
+	}
+	for _, d := range bad {
+		if _, err := Normalize([]Spec{{ID: "f", Path: "/data/f.ini", Docs: d}}); err == nil {
+			t.Errorf("docs %q was accepted", d)
+		}
+	}
+}

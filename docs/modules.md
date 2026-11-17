@@ -114,6 +114,7 @@ files:
     restart: "Restart to apply it."  # "required" (the default), "none", or a hint shown under the editor
     stop_first: false                # true if the game rewrites the file when it stops
     redact: ['^rcon\.password=(.*)$']  # capture group 1 is hidden in the editor and kept on save
+    docs: https://minecraft.wiki/w/Server.properties   # optional: an https link shown above the editor
 ```
 
 Files are read and written with `docker exec` in the game's container (so the image needs `sh`, `head`, `cp`, `mv`

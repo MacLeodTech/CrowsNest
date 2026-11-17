@@ -131,7 +131,7 @@ else: a pattern that does not match real output is the usual bug.
 - **Editable files:** `files: [{id: props, label: Server settings, path: /data/server.properties, redact: ['^rcon\.password=(.*)$']}]`
   puts a Files tab on the card for admins. Declare only files a person would edit by hand, mark secrets with
   `redact` (group 1 is hidden), say in `restart:` what a change needs, and set `stop_first: true` if the game
-  rewrites the file on shutdown. The image needs `sh`, `head`, `cp`, `mv` and `cat`. See docs/modules.md, `files:`.
+  rewrites the file on shutdown. Add `docs:` (an https link to the game's own documentation for the file) and the Files tab shows it above the editor. The image needs `sh`, `head`, `cp`, `mv` and `cat`. See docs/modules.md, `files:`.
 - **Host steps:** `host_setup:` lists things only the operator can do (a firewall rule, a network), shown beside
   the form.
 - **Admin console, REST actions, pre-stop save:** an action is either `request:` (REST) or `rcon:` (one RCON command line with `{field}` placeholders, needs `rcon.addr`); a module uses one kind for all its actions, so kick, ban, unban and whitelist add/remove/list can be declared for an RCON game. See see `palworld` (REST) and `minecraft` (RCON, in the modules repository).

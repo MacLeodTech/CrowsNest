@@ -6,6 +6,10 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Files link to their documentation (done 2026-11-17).** A module's `files:` entry takes an optional `docs:` (an
+  https link; anything else is refused when the module loads), and the Files tab shows it above the editor, opening in
+  a new tab. Palworld links to the official configuration page and Valheim's lists to the official dedicated-server
+  guide; both checked to exist.
 - [x] **Settings files open as a form (done 2026-11-17).** The Files tab turns a one-line `OptionSettings=(...)` file
   (Palworld) into a labelled field per setting (switches for True/False, boxes for numbers and text), with a filter,
   a "Changed only" box and a changed count; a Text view shows one setting per line. Save folds it back into the single
