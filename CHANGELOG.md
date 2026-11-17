@@ -6,6 +6,12 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Crash detection works on Docker 29 (done 2026-11-17).** Docker 29.8.1 resets a container's exit code to 0 as
+  soon as it restarts, so a game that crashed and was restarted by its restart policy looked like a clean run: no
+  event, no alert, no badge. A restart-count rise while the container is running is now counted as a crash ("restarted
+  by docker (exit code not kept)"). Checked live: three SEGV crashes of a real Minecraft gave three events and a
+  crash-loop alert, and the card showed "crash-looping" in a browser. A Palworld crash may also have been missed before:
+  its init script exits 0 once the server dies.
 - [x] **A restore waits out the restart cooldown (done 2026-11-17).** Found on a real Palworld: the restore stops the
   game and the module's 30 s restart cooldown then refused the automatic start, so a restore of a running Palworld
   always left it stopped. It now waits out the remainder and starts the game; checked live (marker file gone, game back
