@@ -84,11 +84,10 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   The Files tab now shows Palworld's settings as a form (see `CHANGELOG.md`). Left: defaults and a short help text
   per setting, and the same for Windrose's `WorldDescription.json`.
   A stopped-game edit for games set up in `config.yaml` (low value).
-- [ ] Crash-loop detection is untested against a real crashing container (also in track C).
+- [ ] Re-test crash detection on a real Palworld: its init script exits 0 when the server dies, so the Docker 29 fix may now catch it (crash-loop detection itself was checked on a real Minecraft, 2026-11-17).
 
 ### C. Verify and harden (open, against real servers)
 
-- [ ] **Start→Switch from the browser UI itself** (done via the API on 2026-11-12).
 - [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup.
 - [ ] **Valheim crossplay join code and player names** on a real server with `CROSSPLAY=1` (the log patterns are from
   the known format, not a capture).
