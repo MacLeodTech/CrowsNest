@@ -27,6 +27,9 @@ Newest first within each part. Design detail for the modular-games rework is in
   always left it stopped. It now waits out the remainder and starts the game; checked live (marker file gone, game back
   online, "starting again" in the activity log). The restore itself (safety backup, stop, helper, world replaced) was
   checked on the same game first.
+- [x] **Start→Switch checked from the browser UI (done 2026-11-17).** Switching from Minecraft to Palworld on the test
+  stack stopped one game and started the other with no problems. The test stack was then torn down: its games, their
+  data and backups were removed and the stack stopped.
 - [x] **Passkeys checked with Windows Hello (done 2026-11-17).** Registration and sign-in worked in a real browser.
 
 - [x] **The card says "crash-looping" (done 2026-11-17).** `/api/games` and the live stream carry `crash_looping`
