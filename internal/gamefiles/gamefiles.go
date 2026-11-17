@@ -97,6 +97,8 @@ func checkPath(p string) error {
 		return errors.New("path must be an absolute path to a file")
 	case strings.ContainsAny(p, "\x00\n\r ?[]{}$`\\\"'") || strings.Contains(p, ".."):
 		return errors.New("path has characters that are not allowed (no .., spaces, quotes, or globs other than *)")
+	case strings.Contains(path.Ext(p), "*"):
+		return errors.New("a * must stay out of the file extension: the syntax check goes by the extension")
 	case strings.HasSuffix(p, "*") || strings.HasPrefix(p, "/*"):
 		return errors.New("a * must sit inside the path, not at its very start or end, so a pattern cannot reach everything")
 	case strings.Contains(p, "//"):

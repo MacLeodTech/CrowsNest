@@ -135,7 +135,8 @@ it: `path: /data/Worlds/*/*/WorldDescription.json`. Each `*` is one folder level
 whole last segment or the first one). The read and write scripts resolve the pattern inside the container and need it to
 match **exactly one** file; with none or several they stop and say how many matched, and write nothing. A file behind a
 pattern must already exist (the pattern cannot say where to create it). With several worlds, point the pattern at the
-one you want by naming its folder.
+one you want by naming its folder. Keep the `*` out of the file extension: the syntax check (JSON, YAML, XML, INI) goes by
+the extension, so `ops.j*n` would be saved unchecked.
 
 An optional `accent: "#rrggbb"` sets the colour of the game's dashboard card. Without one the card uses the
 default theme colour.

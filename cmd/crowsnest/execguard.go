@@ -96,7 +96,8 @@ func newExecProxy(ctx context.Context, listen, upstream string) (*http.Server, e
 	g.Logf = log.Printf
 	log.Printf("execguard: %d allowlisted command(s), listening on %q, upstream %q", len(rules), listen, upstream) // #nosec G706 -- operator-supplied command-line flags, not request data
 	if cfg.Managed.Dir != "" {
-		go watchManagedRules(ctx, g, static, cfg.Managed.Dir, cfg.Managed.PolicyFile, mods, cfg.Platform.BackupsRoot != "")
+		reload := func() (*modules.Set, error) { return modules.ForConfig(cfg, nil) } // a module copied in after start counts too
+		go watchManagedRules(ctx, g, static, cfg.Managed.Dir, cfg.Managed.PolicyFile, reload, cfg.Platform.BackupsRoot != "")
 	}
 	return &http.Server{Addr: listen, Handler: g, ReadHeaderTimeout: 10 * time.Second}, nil
 }
@@ -116,8 +117,9 @@ func serveUntilDone(ctx context.Context, srv *http.Server) error {
 }
 
 // watchManagedRules re-reads the managed games every few seconds and swaps the
-// allowlist when it changes. A read that fails keeps the rules in force.
-func watchManagedRules(ctx context.Context, g *execguard.Guard, static []execguard.Rule, dir, policyFile string, mods *modules.Set, sharedBackups bool) {
+// allowlist when it changes. The modules folder is read again each time, so a module installed after the guard
+// started works without restarting it. A read that fails keeps the rules in force.
+func watchManagedRules(ctx context.Context, g *execguard.Guard, static []execguard.Rule, dir, policyFile string, loadMods func() (*modules.Set, error), sharedBackups bool) {
 	t := time.NewTicker(2 * time.Second)
 	defer t.Stop()
 	last := len(static)
@@ -127,6 +129,11 @@ func watchManagedRules(ctx context.Context, g *execguard.Guard, static []execgua
 		case <-ctx.Done():
 			return
 		case <-t.C:
+		}
+		mods, err := loadMods()
+		if err != nil {
+			log.Printf("execguard: keeping the current allowlist: modules: %v", err)
+			continue
 		}
 		more, err := managed.ExecRulesFor(dir, policyFile, mods, sharedBackups)
 		if err != nil {
