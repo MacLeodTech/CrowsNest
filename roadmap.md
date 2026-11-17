@@ -81,8 +81,8 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 - [ ] **File editing, next steps:** **Palworld:** done as an opt-in `manual_settings` option and checked on a real container (see `CHANGELOG.md`). Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
   a `*` path (done and checked behind the real guard 2026-11-16, so long as the `*` is not in the extension); the
   module still needs writing once the layout is read off a real container (needs OK for the host networking change).
-  The Files tab now shows Palworld's settings as a form (see `CHANGELOG.md`). Left: defaults and a short help text
-  per setting, and the same for Windrose's `WorldDescription.json`.
+  The Files tab shows Palworld's settings as a form with defaults and help (see `CHANGELOG.md`). Left: the same for
+  Windrose's `WorldDescription.json`, once its module exists.
   A stopped-game edit for games set up in `config.yaml` (low value).
 - [ ] Re-test crash detection on a real Palworld: its init script exits 0 when the server dies, so the Docker 29 fix may now catch it (crash-loop detection itself was checked on a real Minecraft, 2026-11-17).
 

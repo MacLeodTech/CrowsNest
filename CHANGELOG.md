@@ -27,6 +27,10 @@ Newest first within each part. Design detail for the modular-games rework is in
   always left it stopped. It now waits out the remainder and starts the game; checked live (marker file gone, game back
   online, "starting again" in the activity log). The restore itself (safety backup, stop, helper, world replaced) was
   checked on the same game first.
+- [x] **Palworld settings form shows defaults and help (done 2026-11-17).** Each setting now has a one-line
+  description and its default value (copied from the server's own `DefaultPalWorldSettings.ini`), and a **Reset**
+  link appears when the value differs from the default. The filter also searches the help text. Settings the table
+  does not know show as before, and passwords have no entry. Unit-tested in Node; not yet looked at in a browser.
 - [x] **Start→Switch checked from the browser UI (done 2026-11-17).** Switching from Minecraft to Palworld on the test
   stack stopped one game and started the other with no problems. The test stack was then torn down: its games, their
   data and backups were removed and the stack stopped.

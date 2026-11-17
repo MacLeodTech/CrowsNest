@@ -701,6 +701,10 @@ fieldset.field legend { padding: 0; margin-bottom: 0.3rem; }
 .files-row label { font: 600 0.78rem var(--font); color: var(--text); }
 .files-row .files-key { font: 0.65rem var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 .files-row input[type="text"] { width: 100%; box-sizing: border-box; padding: 0.3rem 0.5rem; font: 0.78rem var(--mono); color: #cfe0ea; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); border-radius: 6px; }
+.files-row .files-help { font: 0.7rem var(--font); color: var(--muted); }
+.files-row .files-default { font-family: var(--mono); }
+.files-row .files-reset { align-self: flex-start; padding: 0; font: 0.7rem var(--mono); color: var(--cyan); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 0.18em; }
+.files-row .files-reset[hidden] { display: none; }
 .files-row.bool { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.6rem; }
 .files-row.bool .files-rowtext { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
 .files-docs { margin: 0 0 0.6rem; font: 0.75rem var(--mono); display: flex; align-items: center; gap: 0.4rem; }
