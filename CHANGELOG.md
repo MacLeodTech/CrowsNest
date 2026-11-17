@@ -4,6 +4,16 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Live checks of 2026-11-16, and two fixes they found
+
+- [x] **A `*` may not sit in a file's extension (done 2026-11-16).** The syntax check (JSON, YAML, XML, INI) goes by the
+  extension, so `ops.j*n` let broken JSON through. A module with such a path is refused at load.
+- [x] **The exec guard re-reads the modules folder (done 2026-11-16).** It loaded modules once at start, so a module
+  copied in afterwards (and its games' file and backup commands) was refused with "command not allowlisted" until the
+  guard restarted. It now picks the module up within a few seconds.
+- Checked on the test stack against real containers: crash-loop detection (one alert, to a webhook), webhook notices,
+  Minecraft backup and restore, and `*` paths behind the guard (read, write, mode kept, 409 on a stale save, JSON refused).
+
 ## Editable files behind a folder the game names
 
 - [x] **`files:` paths may contain `*` (done 2026-11-16).** For a file under a world id or version folder the module

@@ -207,6 +207,13 @@ func (g *Guard) SetRules(rules []Rule) {
 	g.rmu.Unlock()
 }
 
+// RuleCount is how many commands are allowed now.
+func (g *Guard) RuleCount() int {
+	g.rmu.RLock()
+	defer g.rmu.RUnlock()
+	return len(g.rules)
+}
+
 func (g *Guard) allowed(container string, cmd []string) bool {
 	g.rmu.RLock()
 	defer g.rmu.RUnlock()

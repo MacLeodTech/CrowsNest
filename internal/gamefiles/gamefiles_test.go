@@ -27,6 +27,7 @@ func TestNormalize(t *testing.T) {
 		"glob ?":     {ID: "a", Path: "/data/?.cfg"},
 		"glob last":  {ID: "a", Path: "/data/*"},
 		"glob first": {ID: "a", Path: "/*/x.json"},
+		"glob ext":   {ID: "a", Path: "/data/ops.j*n"},
 		"glob space": {ID: "a", Path: "/data/a b/*/x.json"},
 		"quote":      {ID: "a", Path: "/data/x'y"},
 		"proc":       {ID: "a", Path: "/proc/self/environ"},
