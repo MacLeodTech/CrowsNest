@@ -27,6 +27,7 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 </svg>
 <div class="backdrop" aria-hidden="true"><span class="grid"></span><span class="glow glow-a"></span><span class="glow glow-b"></span></div>
@@ -38,7 +39,8 @@
     <img src="{{asset "brand.png"}}" alt="" width="38" height="38">
     <span class="brand-text"><strong>CrowsNest</strong><small>// {{if eq .Page "games"}}shipyard{{else if eq .Page "settings"}}settings{{else if eq .Page "account"}}account{{else}}lookout console{{end}}</small></span>
   </a>
-  <nav class="user-bar" aria-label="Main">
+  <button id="nav-toggle" class="btn btn-ghost nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav" aria-label="Menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+  <nav id="main-nav" class="user-bar" aria-label="Main">
     {{if .IsAdmin}}
     <a id="dashboard-btn" class="btn btn-ghost nav-link" href="/"{{if eq .Page "dashboard"}} aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#i-compass"/></svg><span class="btn-label">Dashboard</span></a>
     <a id="games-btn" class="btn btn-ghost nav-link" href="/games"{{if eq .Page "games"}} aria-current="page"{{end}}><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-label">Games</span></a>

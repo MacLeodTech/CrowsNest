@@ -155,3 +155,21 @@ function confirmAction({ title, message = "", confirmLabel = "Confirm", danger =
     window.location.href = "/login";
   });
 })();
+
+// Phone menu: the hamburger button opens and closes the nav. Escape or a tap outside closes it.
+(() => {
+  const toggle = document.getElementById("nav-toggle");
+  const bar = document.querySelector(".topbar");
+  if (!toggle || !bar) return;
+  const set = (open) => {
+    bar.classList.toggle("nav-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+  };
+  toggle.addEventListener("click", () => set(!bar.classList.contains("nav-open")));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && bar.classList.contains("nav-open")) { set(false); toggle.focus(); }
+  });
+  document.addEventListener("click", (e) => {
+    if (bar.classList.contains("nav-open") && !bar.contains(e.target)) set(false);
+  });
+})();
