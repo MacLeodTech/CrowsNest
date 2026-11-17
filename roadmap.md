@@ -27,7 +27,7 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 
 - [x] **R4 (ops). Upgrade production from 0.11.0 to 0.16.2.** Done 2026-11-16: template-check reconciled, game
   containers created (`up --no-start`), master key added, panel, execguard and guard recreated and healthy.
-  Two things the upgrade needed that the templates don't say yet: `users.env` and the session secret must live in
+  Prod now runs v0.16.19 (checked 2026-11-17). Two things the upgrade needed that the templates don't say yet: `users.env` and the session secret must live in
   the writable data folder (`users_file: /app/data/users.env`, `session_secret_file: /app/data/.session_secret`),
   because 0.16 rewrites them through a temp file in the same directory and a single-file bind mount under a
   read-only root fails (the panel crash-looped on "read-only file system"); and execguard now needs the
@@ -48,9 +48,9 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
   and stopped it (healthy on the chosen port). Rough edge found: a game whose first image pull the guard refused
   stays `failed`; Update image does re-run it, so the card now says **Retry install** (#47).
 - [x] **Try passkeys in a real browser.** Windows Hello worked (2026-11-17). A phone and a security key are untried.
-- [ ] **Track C checks against real servers:** idle and night auto-stop with Discord notices (see C below), and the
-  Windrose invite-code join. Done 2026-11-16 on the test stack: crash-loop detection against a container that really
-  exits (one alert, to a webhook), and Minecraft backup and restore on a real world.
+- [ ] **Track C checks against real servers:** idle and night auto-stop with Discord notices, the Windrose
+  invite-code join and the Palworld crash re-test (all in C below). Done: crash-loop detection against a container
+  that really exits (one alert, to a webhook), and Minecraft backup and restore on a real world (2026-11-16).
 
 #### P2: reliability, tests and release hygiene
 
@@ -74,8 +74,9 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 ### B. Accounts and settings (open)
 
 - [ ] **Backups:** the restore is verified on a real Minecraft world (2026-11-16) and on a config-file game on the
-  test stack. Left: the config-file restore on prod Palworld (needs `dir`, `restore` and `restore_binds` in its
-  `config.yaml` entry and the `palworld-restore` guard scope; see `docs/backups.md`), and Valheim, Source, 7 Days to
+  test stack. Left: the config-file restore on prod Palworld (the `restore` and `restore_binds` settings and the
+  `palworld-restore` guard scope are in place on prod, but a restore has not been run there yet; see
+  `docs/backups.md`), and Valheim, Source, 7 Days to
   Die and Don't Starve Together on real worlds. Config-file games still back up inside their own data and would need
   the bind added by hand.
 - [ ] **File editing, next steps:** **Palworld:** done as an opt-in `manual_settings` option and checked on a real container (see `CHANGELOG.md`). Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
@@ -84,18 +85,20 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   The Files tab shows Palworld's settings as a form with defaults and help (see `CHANGELOG.md`). Left: the same for
   Windrose's `WorldDescription.json`, once its module exists.
   A stopped-game edit for games set up in `config.yaml` (low value).
-- [ ] Re-test crash detection on a real Palworld: its init script exits 0 when the server dies, so the Docker 29 fix may now catch it (crash-loop detection itself was checked on a real Minecraft, 2026-11-17).
 
 ### C. Verify and harden (open, against real servers)
 
+- [ ] **Re-test crash detection on a real Palworld.** Its init script exits 0 when the server dies, so the Docker 29
+  fix may now catch it (crash-loop detection itself was checked on a real Minecraft, 2026-11-17). Prod `palworld` is
+  stopped on purpose until someone wants to play, so this needs it started first.
 - [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup.
 - [ ] **Valheim crossplay join code and player names** on a real server with `CROSSPLAY=1` (the log patterns are from
   the known format, not a capture).
 - [ ] **Idle/night auto-stop and Discord notifications** (backlog 2026-11-17: the real Discord webhook check) against real servers. Webhook notices are verified on the
   test stack (start, stop, backup, restore, crash loop, offsite) but the Discord channel itself is not: it only
   accepts discord.com addresses, so it needs a real webhook. A game gets a fixed one-hour grace until a player has
-  been seen, which makes this slow to test; the notice on a real idle stop was due about 20:35 on 2026-11-16, so
-  check the result in the test stack's receiver log before relying on it. Check the firewall for `:5001` and game ports.
+  been seen, which makes this slow to test; the test stack that held the earlier idle-stop attempt was torn down on
+  2026-11-17, so run it again. Check the firewall for `:5001` and game ports.
 
 ### Backlog (parked, come back to it later)
 
