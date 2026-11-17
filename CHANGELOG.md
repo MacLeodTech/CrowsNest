@@ -4,6 +4,15 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Phase 6 checked on production Palworld
+
+- [x] **Start, backup and stop through the panel on the real host (done 2026-11-17).** Prod Palworld (a `config.yaml`
+  game, so no file edit) started from the dashboard and reached "Running Palworld dedicated server on :8211"; the
+  backup wrote a valid archive with `Level.sav` and the player saves; stop exited 143 with no OOM and a clean server
+  shutdown. Audit lines were logged for each step. The memory check refused the first start ("needs about 8.0 GiB and
+  the host has 7.8 GiB to spare") until the dev and test containers were stopped, so on this 15 GB host Palworld needs
+  those stopped first. The stop also took a backup just before it.
+
 ## Live checks of 2026-11-16, and two fixes they found
 
 - [x] **A `*` may not sit in a file's extension (done 2026-11-16).** The syntax check (JSON, YAML, XML, INI) goes by the
