@@ -73,6 +73,15 @@ banned lists), admins get a **Files** tab on its card. Pick a file, edit it and 
   and text), a filter box, a **Changed only** checkbox and a count of what you changed. **Text** shows the same file
   with one setting per line. Either way, Save writes the single line the game expects, and only the settings you
   changed differ from the original. A file it cannot read this way opens as plain text, untouched.
+- **Windrose's world settings as a form.** `WorldDescription.json` opens as a form too: the difficulty preset as a
+  drop-down, a switch for each true/false setting, a box for each multiplier with the game's documented range and
+  default, a drop-down for combat difficulty, a **Reset** link per setting and the same filter and **Changed only**
+  box. A value outside the documented range is flagged but still saved (the game decides). Changing a value while the
+  preset is Easy, Medium or Hard shows a note: the game turns the preset into Custom on its next start. A setting
+  the form does not know (a newer game build) still gets a plain field. A save replaces only the values you
+  changed, so the file's layout and numbers stay exactly as they were.
+- **Line endings are kept.** A file the game wrote with Windows (CRLF) line endings is edited as plain lines and
+  written back with CRLF, so a save changes only what you edited.
 - **Saving asks for your password** and shows how many lines changed. Each save is recorded in the activity feed and
   the audit file (who, which file, the hash before and after, never the content).
 - **Nothing is overwritten blindly.** The editor remembers the hash of what it loaded. If the file changed since (the

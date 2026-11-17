@@ -1213,6 +1213,12 @@ function filesDocs(card, f) {
   a.textContent = `Documentation for ${f.label} (${host})`;
 }
 
+// True when every line break in text is CRLF (a file with a mix is left as it is).
+function usesCRLF(text) { return text.includes("\r\n") && !/(^|[^\r])\n/.test(text); }
+// The editor works in LF: fromDisk converts a CRLF file for it, toDisk puts the CRLF back for saving.
+function fromDisk(text, crlf) { return crlf ? text.replace(/\r\n/g, "\n") : text; }
+function toDisk(text, crlf) { return crlf ? text.replace(/\r?\n/g, "\r\n") : text; }
+
 function lineDiff(a, b) {
   const count = (lines) => lines.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
   const ca = count(a.split("\n")), cb = count(b.split("\n"));
@@ -1243,8 +1249,10 @@ function optionsView(card) {
 function setOptionsMode(card, st, mode) {
   const v = optionsView(card);
   if (mode === "form") {
-    const model = OptionSettings.parse(v.text.value);
-    if (!model) { toast("The text no longer reads as a list of settings, so it can't be shown as a form. Fix it in the text view.", "error"); mode = "text"; }
+    const world = st.form === "world";
+    const model = world ? WorldDescription.parse(v.text.value) : OptionSettings.parse(v.text.value);
+    if (!model) { toast(world ? "The text no longer reads as a world settings file, so it can't be shown as a form. Fix it in the text view." : "The text no longer reads as a list of settings, so it can't be shown as a form. Fix it in the text view.", "error"); mode = "text"; }
+    else if (world) renderWorldForm(card, st, model);
     else renderOptionsForm(card, st, model);
   }
   st.mode = mode;
@@ -1367,6 +1375,150 @@ function renderOptionsForm(card, st, model) {
   refresh();
 }
 
+// Windrose's WorldDescription.json as a form. Unlike the OptionSettings form, the text view is the file itself:
+// each change replaces just that one value in it (worlddescription.js), so nothing else in the file moves.
+function renderWorldForm(card, st, model) {
+  const v = optionsView(card);
+  const WD = WorldDescription;
+  const orig = new Map(WD.parse(st.original).items.map((i) => [i.id, i.value]));
+  let cur = model;
+  const find = (id) => cur.items.find((i) => i.id === id);
+  v.form.replaceChildren();
+  const rows = [];
+  const unquote = (lit) => (/^".*"$/.test(lit) ? JSON.parse(lit) : lit);
+  const defText = (r) => (r.kind === "tag" ? unquote(r.hint.def).split(".").pop() : r.hint.def);
+  const refresh = () => {
+    const needle = v.filter.value.trim().toLowerCase();
+    let changed = 0, valuesChanged = 0, bad = 0, range = 0;
+    rows.forEach((r) => {
+      const item = find(r.id);
+      const isChanged = !WD.sameValue(orig.get(r.id), item.value);
+      r.el.classList.toggle("changed", isChanged);
+      if (isChanged) { changed++; if (r.kind !== "preset") valuesChanged++; }
+      if (r.el.classList.contains("invalid")) bad++;
+      if (r.el.classList.contains("range")) range++;
+      const hit = !needle || r.name.toLowerCase().includes(needle) || r.labelText.toLowerCase().includes(needle) ||
+        (r.hint && r.hint.help.toLowerCase().includes(needle));
+      if (r.reset) r.reset.hidden = !r.hint || WD.sameValue(item.value, r.hint.def);
+      r.el.hidden = !hit || (v.only.checked && !isChanged);
+    });
+    v.count.textContent = changed ? `${changed} changed` : "";
+    const notes = [];
+    if (bad) notes.push(`${bad} field(s) are not valid numbers, so that change was not applied.`);
+    if (range) notes.push(`${range} value(s) are outside the range the game documents. It may reject them.`);
+    const preset = find("preset");
+    if (valuesChanged && preset && unquote(preset.value) !== "Custom") {
+      notes.push(`The preset is ${unquote(preset.value)}. The game turns it into Custom on its next start if any value differs from the preset; set it to Custom to keep your values.`);
+    }
+    const syntax = card.querySelector(".files-syntax");
+    syntax.textContent = notes.join(" ");
+    syntax.hidden = notes.length === 0;
+  };
+  const write = (r, literal) => {
+    v.text.value = WD.set(v.text.value, find(r.id), literal);
+    cur = WD.parse(v.text.value);
+    refresh();
+  };
+  model.items.forEach((item, index) => {
+    const hint = item.kind === "preset" ? null : WindroseHints.get(item.name);
+    const labelText = item.kind === "preset" ? "Difficulty preset" : hint ? hint.label : WD.label(item.name);
+    const el = document.createElement("div");
+    el.className = `files-row ${item.kind === "tag" ? "choice" : item.kind}`; // not "tag": the stylesheet has a badge class of that name
+    const id = `fs-${card.dataset.id}-${index}`;
+    const lab = document.createElement("label");
+    lab.htmlFor = id;
+    lab.textContent = labelText;
+    const key = document.createElement("span");
+    key.className = "files-key";
+    key.textContent = item.name;
+    const r = { el, id: item.id, kind: item.kind, name: item.name, labelText, hint };
+    let note = null, reset = null;
+    const helpText = item.kind === "preset" ? "Easy, Medium or Hard, or Custom to use the values below." : hint ? hint.help : "";
+    if (helpText || hint) {
+      note = document.createElement("span");
+      note.className = "files-help";
+      note.textContent = helpText;
+      if (hint) {
+        const def = document.createElement("span");
+        def.className = "files-default";
+        def.textContent = ` Default: ${defText(r)}`;
+        note.append(def);
+        reset = document.createElement("button");
+        reset.type = "button";
+        reset.className = "files-reset";
+        reset.textContent = "Reset";
+        reset.title = `Put back the default (${defText(r)})`;
+        reset.setAttribute("aria-label", `Reset ${labelText} to its default`);
+        r.reset = reset;
+      }
+    }
+    let input;
+    // A drop-down for the preset and for a tag with known choices: the choices plus the current value if unknown.
+    const select = (choices, current, toLiteral) => {
+      input = document.createElement("select");
+      const list = choices.includes(current) ? choices : [current, ...choices];
+      list.forEach((c) => { const o = document.createElement("option"); o.value = c; o.textContent = c; input.appendChild(o); });
+      input.value = current;
+      input.addEventListener("change", () => write(r, toLiteral(input.value)));
+      return input;
+    };
+    if (item.kind === "bool") {
+      input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = item.value === "true";
+      input.addEventListener("change", () => write(r, input.checked ? "true" : "false"));
+      const text = document.createElement("span");
+      text.className = "files-rowtext";
+      text.append(lab, key);
+      if (note) text.append(note);
+      if (reset) text.append(reset);
+      el.append(text, input);
+      if (reset) reset.addEventListener("click", () => { input.checked = hint.def === "true"; write(r, hint.def); });
+    } else {
+      if (item.kind === "preset") select(WindroseHints.PRESETS, unquote(item.value), WD.quote);
+      else if (item.kind === "tag" && hint && hint.options) {
+        const base = WD.PREFIX + item.name + ".";
+        const cur0 = unquote(item.value);
+        select(hint.options.map((o) => base + o), cur0, WD.quote);
+        // show only the last word, keeping the full tag as the value
+        [...input.options].forEach((o) => { o.textContent = o.value.startsWith(base) ? o.value.slice(base.length) : o.value; });
+      } else {
+        input = document.createElement("input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        if (item.kind === "number") input.inputMode = "decimal";
+        input.value = item.kind === "tag" ? unquote(item.value) : item.value;
+        input.addEventListener("input", () => {
+          const val = input.value.trim();
+          if (item.kind === "number") {
+            const ok = WD.isNumber(val);
+            el.classList.toggle("invalid", !ok);
+            const n = Number(val);
+            el.classList.toggle("range", ok && !!hint && ((hint.min !== undefined && n < hint.min) || (hint.max !== undefined && n > hint.max)));
+            if (ok) write(r, val); else refresh();
+          } else write(r, WD.quote(input.value));
+        });
+      }
+      el.append(lab, input, key);
+      if (note) el.append(note);
+      if (reset) el.append(reset);
+      if (reset) reset.addEventListener("click", () => {
+        if (input.tagName === "SELECT") input.value = unquote(hint.def);
+        else input.value = item.kind === "tag" ? unquote(hint.def) : hint.def;
+        el.classList.remove("invalid", "range");
+        write(r, hint.def);
+      });
+    }
+    input.id = id;
+    rows.push(r);
+    v.form.appendChild(el);
+  });
+  v.filter.oninput = refresh;
+  v.only.onchange = refresh;
+  refresh();
+}
+
 function setupOptionsView(card, st, parsed) {
   const v = optionsView(card);
   v.bar.hidden = !parsed;
@@ -1430,7 +1582,13 @@ async function openFile(id, f) {
     if (!res.ok) { filesNote(card, await errorText(res)); return; }
     data = await res.json();
   } catch (err) { filesNote(card, "Could not read the file."); return; }
+  // A textarea turns CRLF into LF, so a file the game wrote with CRLF (Windrose's) is edited as LF and written back
+  // with CRLF; otherwise every line would count as changed and a save would change the file's line endings.
+  st.crlf = usesCRLF(data.content);
+  data.content = fromDisk(data.content, st.crlf);
   const parsed = typeof OptionSettings !== "undefined" ? OptionSettings.parse(data.content) : null;
+  const world = !parsed && typeof WorldDescription !== "undefined" ? WorldDescription.parse(data.content) : null;
+  st.form = parsed ? "options" : world ? "world" : null;
   st.file = f; st.sha256 = data.sha256; st.options = !!parsed;
   st.original = parsed ? OptionSettings.expandModel(parsed) : data.content;
   text.value = st.original;
@@ -1455,7 +1613,7 @@ async function openFile(id, f) {
   };
   text.oninput = check;
   check();
-  setupOptionsView(card, st, parsed);
+  setupOptionsView(card, st, parsed || world);
   await loadVersions(id, card, f);
 }
 
@@ -1476,10 +1634,10 @@ async function loadVersions(id, card, f) {
     if (!sel.value) return;
     const res = await fetch(`/api/games/${encodeURIComponent(id)}/files/${encodeURIComponent(f.id)}/history/${encodeURIComponent(sel.value)}`);
     if (!res.ok) { toast(await errorText(res), "error"); return; }
-    const content = (await res.json()).content;
     const st = filesState[id];
+    const content = fromDisk((await res.json()).content, st.crlf);
     card.querySelector(".files-text").value = st.options ? OptionSettings.expand(content) : content;
-    if (st.options && st.mode === "form") setOptionsMode(card, st, "form");
+    if (st.form && st.mode === "form") setOptionsMode(card, st, "form");
     toast("Loaded into the editor. Press Save to apply it.", "info");
   };
 }
@@ -1515,7 +1673,7 @@ async function saveFile(id, card, restart) {
     const res = await callAPI(`/api/games/${encodeURIComponent(id)}/files/${encodeURIComponent(f.id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: st.options ? OptionSettings.collapse(text.value) : text.value, base_sha256: st.sha256, password }),
+      body: JSON.stringify({ content: toDisk(st.options ? OptionSettings.collapse(text.value) : text.value, st.crlf), base_sha256: st.sha256, password }),
     });
     if (!res.ok) { toast(await errorText(res), "error"); return; }
     const out = await res.json();
