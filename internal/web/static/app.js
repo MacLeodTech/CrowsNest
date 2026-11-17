@@ -1270,7 +1270,9 @@ function renderOptionsForm(card, st, model) {
       r.el.classList.toggle("changed", isChanged);
       if (isChanged) changed++;
       if (r.el.classList.contains("invalid")) bad++;
-      const hit = !needle || item.key.toLowerCase().includes(needle) || r.labelText.toLowerCase().includes(needle);
+      const hit = !needle || item.key.toLowerCase().includes(needle) || r.labelText.toLowerCase().includes(needle) ||
+        (r.hint && r.hint.help.toLowerCase().includes(needle));
+      if (r.reset) r.reset.hidden = !r.hint || OptionSettings.sameValue(item.value, r.hint.def);
       r.el.hidden = !hit || (v.only.checked && !isChanged);
     });
     v.count.textContent = changed ? `${changed} changed` : "";
@@ -1295,8 +1297,26 @@ function renderOptionsForm(card, st, model) {
     const key = document.createElement("span");
     key.className = "files-key";
     key.textContent = item.key;
-    const r = { el, index, labelText };
+    const hint = typeof PalworldHints !== "undefined" ? PalworldHints.get(item.key) : null;
+    const r = { el, index, labelText, hint };
     let input;
+    let note = null, reset = null;
+    if (hint) {
+      note = document.createElement("span");
+      note.className = "files-help";
+      note.textContent = hint.help;
+      const def = document.createElement("span");
+      def.className = "files-default";
+      def.textContent = ` Default: ${hint.def === "" ? "(empty)" : hint.def}`;
+      note.append(def);
+      reset = document.createElement("button");
+      reset.type = "button";
+      reset.className = "files-reset";
+      reset.textContent = "Reset";
+      reset.title = `Put back the default (${hint.def === "" ? "empty" : hint.def})`;
+      reset.setAttribute("aria-label", `Reset ${labelText} to its default`);
+      r.reset = reset;
+    }
     if (kind === "bool") {
       input = document.createElement("input");
       input.type = "checkbox";
@@ -1305,7 +1325,13 @@ function renderOptionsForm(card, st, model) {
       const text = document.createElement("span");
       text.className = "files-rowtext";
       text.append(lab, key);
+      if (note) text.append(note);
+      if (reset) text.append(reset);
       el.append(text, input);
+      if (hint) reset.addEventListener("click", () => {
+        input.checked = /^true$/i.test(hint.def);
+        write(r, OptionSettings.boolText(item.value, input.checked));
+      });
     } else {
       input = document.createElement("input");
       input.type = "text";
@@ -1323,6 +1349,14 @@ function renderOptionsForm(card, st, model) {
         write(r, next);
       });
       el.append(lab, input, key);
+      if (note) el.append(note);
+      if (reset) el.append(reset);
+      if (hint) reset.addEventListener("click", () => {
+        const dk = OptionSettings.kind(hint.def);
+        input.value = dk === "string" ? hint.def.slice(1, -1) : hint.def;
+        el.classList.remove("invalid");
+        write(r, hint.def);
+      });
     }
     input.id = id;
     rows.push(r);

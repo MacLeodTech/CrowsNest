@@ -65,3 +65,29 @@ test("kind and label", () => {
   assert.equal(OS.label("PalEggDefaultHatchingTime"), "Pal Egg Default Hatching Time");
   assert.equal(OS.label("RESTAPIPort"), "RESTAPI Port");
 });
+
+test("sameValue compares numbers as numbers and booleans without case", () => {
+  assert.ok(OS.sameValue("1.0", "1.000000"));
+  assert.ok(OS.sameValue("true", "True"));
+  assert.ok(!OS.sameValue("2", "1.000000"));
+  assert.ok(!OS.sameValue('"a"', '"A"'));
+  assert.ok(!OS.sameValue("True", "1"));
+  assert.ok(OS.sameValue("None", "None"));
+});
+
+test("Palworld hints: known keys carry a default and help, unknown keys none, no passwords", () => {
+  const PH = require("../../internal/web/static/palworldhints.js");
+  const h = PH.get("ExpRate");
+  assert.equal(h.def, "1.000000");
+  assert.ok(h.help.length > 5);
+  assert.equal(PH.get("NoSuchSetting"), null);
+  assert.equal(PH.get("toString"), null);
+  assert.equal(PH.get("AdminPassword"), null);
+  assert.equal(PH.get("ServerPassword"), null);
+  // A default must read as the same kind of value as the form would show for it.
+  for (const k of ["bIsPvP", "DayTimeSpeedRate", "DropItemMaxNum", "ServerName", "DeathPenalty", "CrossplayPlatforms"]) {
+    assert.ok(PH.get(k).def !== undefined, k);
+  }
+  assert.equal(OS.kind(PH.get("bIsPvP").def), "bool");
+  assert.equal(OS.kind(PH.get("ServerName").def), "string");
+});

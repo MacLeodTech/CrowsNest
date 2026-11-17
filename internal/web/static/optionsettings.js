@@ -100,5 +100,16 @@
     return k.replace(/_/g, " ");
   }
 
-  return { parse, expand, collapse, expandModel, collapseModel, kind, label, boolText };
+  // True when two values mean the same thing: numbers compare as numbers ("1.0" and "1.000000" match), True and
+  // False ignore case, anything else must match exactly.
+  function sameValue(a, b) {
+    if (a === b) return true;
+    const ka = kind(a);
+    if (ka !== kind(b)) return false;
+    if (ka === "number") return Number(a) === Number(b);
+    if (ka === "bool") return a.toLowerCase() === b.toLowerCase();
+    return false;
+  }
+
+  return { parse, expand, collapse, expandModel, collapseModel, kind, label, boolText, sameValue };
 });
