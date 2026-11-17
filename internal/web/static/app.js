@@ -43,6 +43,25 @@ function applyButtons(card, status) {
   card.querySelector(".stop-btn").disabled = status === "offline" || status === "stopping";
 }
 
+// setCrashLooping marks the card's badge while the game is over the crash-loop
+// threshold: status alone reads "online" between restarts.
+function setCrashLooping(id, looping) {
+  const card = cardFor(id);
+  if (!card) return;
+  const badge = card.querySelector(".status");
+  if (!badge) return;
+  const text = badge.querySelector(".status-text");
+  const status = card.dataset.status;
+  const show = !!looping && status !== "offline" && status !== "stopping";
+  badge.classList.toggle("status-crashloop", show);
+  if (show) {
+    text.textContent = "crash-looping";
+    badge.title = "This game keeps crashing and restarting. Stop it or check its logs.";
+  } else {
+    badge.removeAttribute("title");
+  }
+}
+
 function setStatus(id, status) {
   const card = cardFor(id);
   if (!card) return;
@@ -633,6 +652,7 @@ async function refreshHealth() {
 function applyGames(games) {
   games.forEach((g) => {
     setStatus(g.id, g.status);
+    setCrashLooping(g.id, g.crash_looping);
     setPlayerCount(g.id, g.player_count);
     setJoinCodes(g.id, g.join_codes);
     setIdleTimer(g.id, g.idle_seconds_left);

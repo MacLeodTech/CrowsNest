@@ -393,6 +393,11 @@ type gameSummary struct {
 	// can tell a new failure from one it has already shown.
 	StartError string `json:"start_error,omitempty"`
 
+	// CrashLooping is true while the game is over the crash-loop threshold,
+	// so the card can say so even though the status flips back to online
+	// between restarts.
+	CrashLooping bool `json:"crash_looping,omitempty"`
+
 	// JoinCodes are values the running server printed (a crossplay join
 	// code); only sent while the game is online.
 	JoinCodes    []games.ConnectSecret `json:"join_codes,omitempty"`
@@ -433,6 +438,9 @@ func (a *App) listGames(r *http.Request) []gameSummary {
 			DisplayName: d.DisplayName,
 			Status:      a.gameStatus(d, snaps[i].Status).String(),
 			AutoStop:    games.CanCountPlayers(d),
+		}
+		if a.Crashes != nil && a.Crashes.Looping(d.ID) {
+			out[i].CrashLooping = true
 		}
 		if snaps[i].PlayersOK {
 			c := snaps[i].Count

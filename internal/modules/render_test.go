@@ -436,7 +436,7 @@ func TestFilesHelperScopeAndSpec(t *testing.T) {
 	if !strings.Contains(string(scopes), `"valheim-files"`) {
 		t.Error("the files scope is not in the guard's scopes")
 	}
-	if p := renderBundled(t, config.GameConfig{ID: "palworld", ContainerName: "palworld"}); p.FilesScope != nil {
+	if p := renderBundled(t, config.GameConfig{ID: "windrose", ContainerName: "windrose"}); p.FilesScope != nil {
 		t.Error("a module with no files gets a files scope")
 	}
 }

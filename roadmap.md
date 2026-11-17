@@ -79,10 +79,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   Die and Don't Starve Together on real worlds. Config-file games still back up inside their own data and would need
   the bind added by hand.
 - [ ] **File editing, next steps:** `files:` for
-  Source, Don't Starve Together and 7 Days to Die. **Palworld:** its image rebuilds the whole
-  `PalWorldSettings.ini` from environment variables on every start, so nothing declared there would last; it needs
-  the module to set `DISABLE_GENERATE_SETTINGS=true` (after which the form options stop applying to the file) or a
-  per-setting editor. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
+  Source, Don't Starve Together and 7 Days to Die. **Palworld:** done as an opt-in `manual_settings` option (see `CHANGELOG.md`); check it on a real container. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
   a `*` path (done and checked behind the real guard 2026-11-16, so long as the `*` is not in the extension); the
   module still needs writing once the layout is read off a real container (needs OK for the host networking change).
   A settings editor in the module form, with named fields, would serve both games better than raw files.
@@ -100,8 +97,6 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   accepts discord.com addresses, so it needs a real webhook. A game gets a fixed one-hour grace until a player has
   been seen, which makes this slow to test; the notice on a real idle stop was due about 20:35 on 2026-11-16, so
   check the result in the test stack's receiver log before relying on it. Check the firewall for `:5001` and game ports.
-- [ ] **Show a crash-looping game on its dashboard card.** It shows "online" between restarts; only the alert and
-  the activity feed show the loop.
 
 ### Backlog (parked, come back to it later)
 
