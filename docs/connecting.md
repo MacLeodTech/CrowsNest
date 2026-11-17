@@ -15,7 +15,7 @@ need one.
 |---|---|---|
 | Palworld | Server's LAN address over a **private overlay network** (e.g. Tailscale) | Dedicated servers only join by IP:port. There's no built-in relay or Steam relay. |
 | Valheim | **Join by IP** over a private overlay network (same as Palworld, `udp:2456-2457`), or a **crossplay join code** (add `CROSSPLAY=1` to the server's environment; PlayFab relay) | The crossplay code is in the server log and changes on every restart, and adds some relay latency. The compose example does neither by default. |
-| Windrose | **Invite code** (the game's own P2P relay) | Set `WINDROSE_INVITE_CODE` and `P2P_PROXY_ADDRESS` (host LAN IP) in `.env`; the compose example uses `network_mode: host`. |
+| Windrose | **Invite code** (the game's own P2P relay) | Set `WINDROSE_INVITE_CODE` and the `LAN_*` and `WINDROSE_LAN_IP` values in `.env`; the compose example puts it on a macvlan network (`lan`) so the relay sees a real LAN address. |
 
 ## Palworld over Tailscale
 

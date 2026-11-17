@@ -436,7 +436,14 @@ func TestFilesHelperScopeAndSpec(t *testing.T) {
 	if !strings.Contains(string(scopes), `"valheim-files"`) {
 		t.Error("the files scope is not in the guard's scopes")
 	}
-	if p := renderBundled(t, config.GameConfig{ID: "windrose", ContainerName: "windrose"}); p.FilesScope != nil {
-		t.Error("a module with no files gets a files scope")
+	// Windrose's world file sits behind two `*` folders inside its data folder: the helper may edit it, and its
+	// scope gets no ports, no exec and none of the macvlan network the game itself needs.
+	w := renderBundled(t, config.GameConfig{ID: "windrose", ContainerName: "windrose"})
+	if w.FilesScope == nil || w.FilesScope.Name != "windrose-files" || len(w.FilesScope.Ports) != 0 || w.FilesScope.Exec || len(w.FilesScope.Networks) != 1 || w.FilesScope.Networks[0] != "crowsnest-games-net" {
+		t.Fatalf("windrose files scope = %+v", w.FilesScope)
+	}
+	ws := gamefiles.Spec{ID: "world", Path: "/home/steam/server-files/R5/Saved/SaveProfiles/Default/RocksDB_v2/*/Worlds/*/WorldDescription.json", MaxBytes: 100}
+	if _, ok := w.FileSpec(ws, false, ""); !ok {
+		t.Error("the helper refused Windrose's world file, which is inside its data folder")
 	}
 }

@@ -423,7 +423,9 @@ func (m *Manifest) Render(g config.GameConfig, p Platform) (*Rendered, error) {
 	}
 	if len(m.Files) > 0 && len(r.dataBinds) > 0 {
 		fs := GuardScope{
-			Name: g.ID + FilesSuffix, Images: scope.Images, Networks: scope.Networks,
+			// Only the first network, the one FileSpec attaches to: a helper that edits a file needs none of the
+			// game's other networks (Windrose's macvlan), so its scope does not grant them.
+			Name: g.ID + FilesSuffix, Images: scope.Images, Networks: []string{r.nets[0].Name},
 			Ports: []GuardPort{}, Binds: append([]string{}, dataScope...), Labels: scope.Labels,
 		}
 		r.FilesScope = &fs
