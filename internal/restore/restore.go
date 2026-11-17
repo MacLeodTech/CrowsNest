@@ -18,6 +18,7 @@ import (
 
 	"github.com/macleodtech/crowsnest/internal/backup"
 	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/exclusivity"
 	"github.com/macleodtech/crowsnest/internal/games"
 	"github.com/macleodtech/crowsnest/internal/history"
 )
@@ -306,13 +307,29 @@ func (m *Manager) run(ctx context.Context, d games.GameDef, file, actor string, 
 		m.notify(fmt.Sprintf("**%s** was restored from %s by %s. It was stopped; start it when ready.", d.DisplayName, file, actor))
 		return
 	}
-	if err := m.Control.RequestStart(ctx, d.ID); err != nil {
+	if err := m.startAgain(ctx, d.ID); err != nil {
 		m.record(d.ID, actor, detail+"; it was not started again: "+tail(err.Error()))
 		m.notify(fmt.Sprintf("**%s** was restored from %s by %s, but could not be started again (%s). Start it yourself.", d.DisplayName, file, actor, tail(err.Error())))
 		return
 	}
 	m.record(d.ID, actor, detail+"; starting again")
 	m.notify(fmt.Sprintf("**%s** was restored from %s by %s and is starting again.", d.DisplayName, file, actor))
+}
+
+// startAgain starts the game after a restore. The restore stopped it moments ago, so a module with a restart
+// cooldown (Palworld's is 30s) would always refuse the first try; wait out the remainder once and try again.
+func (m *Manager) startAgain(ctx context.Context, id string) error {
+	err := m.Control.RequestStart(ctx, id)
+	var cd *exclusivity.CooldownError
+	if !errors.As(err, &cd) {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return err
+	case <-time.After(cd.Remaining + time.Second):
+	}
+	return m.Control.RequestStart(ctx, id)
 }
 
 // removeHelper deletes a container of that name if there is one.

@@ -6,6 +6,11 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **A restore waits out the restart cooldown (done 2026-11-17).** Found on a real Palworld: the restore stops the
+  game and the module's 30 s restart cooldown then refused the automatic start, so a restore of a running Palworld
+  always left it stopped. It now waits out the remainder and starts the game; checked live (marker file gone, game back
+  online, "starting again" in the activity log). The restore itself (safety backup, stop, helper, world replaced) was
+  checked on the same game first.
 - [x] **Passkeys checked with Windows Hello (done 2026-11-17).** Registration and sign-in worked in a real browser.
 
 - [x] **The card says "crash-looping" (done 2026-11-17).** `/api/games` and the live stream carry `crash_looping`
