@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -57,5 +58,30 @@ func TestMetrics_TokenGatedAndExposesGames(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics missing %q in:\n%s", want, body)
 		}
+	}
+}
+
+func TestListGames_FlagsCrashLooping(t *testing.T) {
+	h := newHarness(t, nil, "windrose", "other")
+	h.App.Crashes = fakeCrashes{}
+	rec := httptest.NewRecorder()
+	h.mux().ServeHTTP(rec, h.req(http.MethodGet, "/api/games", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("/api/games = %d", rec.Code)
+	}
+	var got []struct {
+		ID           string `json:"id"`
+		CrashLooping bool   `json:"crash_looping"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range got {
+		if want := g.ID == "windrose"; g.CrashLooping != want {
+			t.Errorf("%s crash_looping = %v, want %v", g.ID, g.CrashLooping, want)
+		}
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d games, want 2", len(got))
 	}
 }

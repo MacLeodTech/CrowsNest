@@ -4,6 +4,16 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Crash-looping shown on the dashboard card
+
+- [x] **The card says "crash-looping" (done 2026-11-17).** `/api/games` and the live stream carry `crash_looping`
+  while a game is over the crash-loop threshold, and the status badge turns red with that text instead of reading
+  "online" between restarts. The status itself is unchanged, so the buttons behave as before.
+- [x] **Palworld settings file is editable, opt-in (done 2026-11-17).** The module has a `manual_settings` option
+  (default false) that sets `DISABLE_GENERATE_SETTINGS`, and a Files entry for `PalWorldSettings.ini` with both
+  passwords hidden. Left off, the image still rewrites the file from the form on every start, as before. Not yet
+  tried on a real container.
+
 ## Phase 6 checked on production Palworld
 
 - [x] **Start, backup and stop through the panel on the real host (done 2026-11-17).** Prod Palworld (a `config.yaml`

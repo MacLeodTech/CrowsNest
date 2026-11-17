@@ -35,6 +35,7 @@ runtime:
     - COMMUNITY=false
     - MULTITHREADING=true
     - REST_API_ENABLED=true
+    - DISABLE_GENERATE_SETTINGS=${manual_settings}
     - REST_API_PORT=8212
     - RCON_ENABLED=false      # deprecated upstream in favour of the REST API
     - UPDATE_ON_BOOT=true
@@ -50,7 +51,20 @@ backup:
   # regenerated from the options on every start, so an old copy must not win.
   restore: ["/bin/sh", "-c", "set -e; rm -rf /palworld/Pal/Saved/SaveGames; tar xzf \"$CROWSNEST_RESTORE_FILE\" -C /palworld/Pal Saved/SaveGames; chown -R \"$(stat -c %u:%g /palworld)\" /palworld/Pal/Saved/SaveGames"]
 
+# The image rebuilds PalWorldSettings.ini from the options below on every start, so an edit made in the Files tab
+# only lasts when "manual_settings" is true. Turning it on stops the form options from being written to the file
+# (the file as last generated is kept, so the REST API and passwords keep working); change them in the file instead.
+files:
+  - id: settings
+    label: PalWorldSettings.ini
+    path: /palworld/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini
+    max_bytes: 32768
+    restart: "Restart to apply it. It lasts only while 'Edit the settings file by hand' is true; otherwise the image rewrites it from the form on every start."
+    stop_first: true
+    redact: ['AdminPassword="([^"]*)"', 'ServerPassword="([^"]*)"']
+
 options:
+  - {key: manual_settings, label: "Edit the settings file by hand (true or false; the form options below then stop applying to the file)", default: "false"}
   - {key: max_players, label: Max players, default: "8"}
   - {key: server_name, label: Server name, default: CrowsNest Palworld}
   - {key: server_password, label: Join password, secret: true}
