@@ -68,6 +68,11 @@ banned lists), admins get a **Files** tab on its card. Pick a file, edit it and 
   container (`<id>-files`, the game's image and data folders only) does it, for files inside the game's data folders.
   A game set up in `config.yaml`, or a file elsewhere in the image, needs the game running. A file that does not
   exist yet reads as empty and Save creates it.
+- **Settings as a form.** A file with one long `OptionSettings=(A=1,B=2,...)` line (Palworld's
+  `PalWorldSettings.ini`) opens as a form: a labelled field per setting (a switch for True/False, a box for numbers
+  and text), a filter box, a **Changed only** checkbox and a count of what you changed. **Text** shows the same file
+  with one setting per line. Either way, Save writes the single line the game expects, and only the settings you
+  changed differ from the original. A file it cannot read this way opens as plain text, untouched.
 - **Saving asks for your password** and shows how many lines changed. Each save is recorded in the activity feed and
   the audit file (who, which file, the hash before and after, never the content).
 - **Nothing is overwritten blindly.** The editor remembers the hash of what it loaded. If the file changed since (the

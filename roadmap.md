@@ -81,7 +81,8 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 - [ ] **File editing, next steps:** **Palworld:** done as an opt-in `manual_settings` option and checked on a real container (see `CHANGELOG.md`). Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
   a `*` path (done and checked behind the real guard 2026-11-16, so long as the `*` is not in the extension); the
   module still needs writing once the layout is read off a real container (needs OK for the host networking change).
-  A settings editor in the module form, with named fields, would serve both games better than raw files.
+  The Files tab now shows Palworld's settings as a form (see `CHANGELOG.md`). Left: defaults and a short help text
+  per setting, and the same for Windrose's `WorldDescription.json`.
   A stopped-game edit for games set up in `config.yaml` (low value).
 - [ ] Crash-loop detection is untested against a real crashing container (also in track C).
 

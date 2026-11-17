@@ -6,6 +6,12 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Settings files open as a form (done 2026-11-17).** The Files tab turns a one-line `OptionSettings=(...)` file
+  (Palworld) into a labelled field per setting (switches for True/False, boxes for numbers and text), with a filter,
+  a "Changed only" box and a changed count; a Text view shows one setting per line. Save folds it back into the single
+  line. Checked in a real browser against a real Palworld (118 settings): an edit of two settings changed exactly those
+  two on disk, the line stayed one line and the hidden admin password was kept. Unit tests for the reader run with
+  `node --test e2e/unit/*.test.js` (also in CI). Defaults and per-setting help are not shown yet.
 - [x] **Crash detection works on Docker 29 (done 2026-11-17).** Docker 29.8.1 resets a container's exit code to 0 as
   soon as it restarts, so a game that crashed and was restarted by its restart policy looked like a clean run: no
   event, no alert, no badge. A restart-count rise while the container is running is now counted as a crash ("restarted

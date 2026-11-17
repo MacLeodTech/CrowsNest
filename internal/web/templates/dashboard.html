@@ -130,6 +130,16 @@
         <div class="files-pick" role="group" aria-label="Files"></div>
         <p class="files-note"></p>
         <div class="files-editor" hidden>
+          <div class="files-views" hidden>
+            <div class="files-view-switch" role="group" aria-label="View">
+              <button class="btn btn-ghost files-view-form" type="button" aria-pressed="true">Form</button>
+              <button class="btn btn-ghost files-view-text" type="button" aria-pressed="false">Text</button>
+            </div>
+            <input class="files-filter" type="search" placeholder="Filter settings…" aria-label="Filter settings" autocomplete="off">
+            <label class="files-changed-only"><input type="checkbox"> Changed only</label>
+            <span class="files-changed-count" role="status"></span>
+          </div>
+          <div class="files-form" hidden></div>
           <textarea class="files-text" rows="14" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="File contents"></textarea>
           <p class="files-syntax" role="status" hidden></p>
           <div class="files-bar">
@@ -211,6 +221,7 @@
 
 {{template "chrome" .}}
 
+<script src="{{asset "optionsettings.js"}}"></script>
 <script src="{{asset "app.js"}}"></script>
 </body>
 </html>
