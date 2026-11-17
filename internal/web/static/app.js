@@ -1200,6 +1200,19 @@ const filesState = {}; // game id -> { files, file, sha256, original }
 
 function filesNote(card, text) { card.querySelector(".files-note").textContent = text; }
 
+// Link to the module's documentation for the open file, when it gives one (https only; the server checks too).
+function filesDocs(card, f) {
+  const p = card.querySelector(".files-docs");
+  const a = p.querySelector("a");
+  const ok = f && typeof f.docs === "string" && /^https:\/\//.test(f.docs);
+  p.hidden = !ok;
+  if (!ok) { a.removeAttribute("href"); return; }
+  a.href = f.docs;
+  let host = f.docs;
+  try { host = new URL(f.docs).host; } catch (err) { /* keep the raw text */ }
+  a.textContent = `Documentation for ${f.label} (${host})`;
+}
+
 function lineDiff(a, b) {
   const count = (lines) => lines.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
   const ca = count(a.split("\n")), cb = count(b.split("\n"));
@@ -1209,10 +1222,137 @@ function lineDiff(a, b) {
   return { added, removed };
 }
 
+// ---- Files tab: settings as a form. A file with one long "OptionSettings=(A=1,B=2,...)" line (Palworld) is shown
+// one setting per line in the text view and as a labelled field per setting in the form view. The textarea
+// stays the source of truth; the form rewrites it, and saving folds it back into the single line the game reads.
+// Anything optionsettings.js does not fully understand is left exactly as it was.
+
+function optionsView(card) {
+  return {
+    bar: card.querySelector(".files-views"),
+    form: card.querySelector(".files-form"),
+    text: card.querySelector(".files-text"),
+    filter: card.querySelector(".files-filter"),
+    only: card.querySelector(".files-changed-only input"),
+    count: card.querySelector(".files-changed-count"),
+    formBtn: card.querySelector(".files-view-form"),
+    textBtn: card.querySelector(".files-view-text"),
+  };
+}
+
+function setOptionsMode(card, st, mode) {
+  const v = optionsView(card);
+  if (mode === "form") {
+    const model = OptionSettings.parse(v.text.value);
+    if (!model) { toast("The text no longer reads as a list of settings, so it can't be shown as a form. Fix it in the text view.", "error"); mode = "text"; }
+    else renderOptionsForm(card, st, model);
+  }
+  st.mode = mode;
+  v.form.hidden = mode !== "form";
+  v.text.hidden = mode === "form";
+  v.filter.hidden = v.only.parentElement.hidden = mode !== "form";
+  v.formBtn.setAttribute("aria-pressed", String(mode === "form"));
+  v.textBtn.setAttribute("aria-pressed", String(mode === "text"));
+  if (mode === "text") v.count.textContent = "";
+}
+
+function renderOptionsForm(card, st, model) {
+  const v = optionsView(card);
+  const orig = new Map(OptionSettings.parse(st.original).items.map((i) => [i.key, i.value]));
+  v.form.replaceChildren();
+  const rows = [];
+  const refresh = () => {
+    const needle = v.filter.value.trim().toLowerCase();
+    let changed = 0, bad = 0;
+    rows.forEach((r) => {
+      const item = model.items[r.index];
+      const isChanged = orig.get(item.key) !== item.value;
+      r.el.classList.toggle("changed", isChanged);
+      if (isChanged) changed++;
+      if (r.el.classList.contains("invalid")) bad++;
+      const hit = !needle || item.key.toLowerCase().includes(needle) || r.labelText.toLowerCase().includes(needle);
+      r.el.hidden = !hit || (v.only.checked && !isChanged);
+    });
+    v.count.textContent = changed ? `${changed} changed` : "";
+    const syntax = card.querySelector(".files-syntax");
+    syntax.textContent = bad ? `${bad} field(s) are not valid numbers. The game may refuse to start with them.` : "";
+    syntax.hidden = !bad;
+  };
+  const write = (r, value) => {
+    model.items[r.index].value = value;
+    v.text.value = OptionSettings.expandModel(model);
+    refresh();
+  };
+  model.items.forEach((item, index) => {
+    const kind = OptionSettings.kind(item.value);
+    const labelText = OptionSettings.label(item.key);
+    const el = document.createElement("div");
+    el.className = `files-row ${kind}`;
+    const id = `fs-${card.dataset.id}-${index}`;
+    const lab = document.createElement("label");
+    lab.htmlFor = id;
+    lab.textContent = labelText;
+    const key = document.createElement("span");
+    key.className = "files-key";
+    key.textContent = item.key;
+    const r = { el, index, labelText };
+    let input;
+    if (kind === "bool") {
+      input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = /^true$/i.test(item.value);
+      input.addEventListener("change", () => write(r, OptionSettings.boolText(item.value, input.checked)));
+      const text = document.createElement("span");
+      text.className = "files-rowtext";
+      text.append(lab, key);
+      el.append(text, input);
+    } else {
+      input = document.createElement("input");
+      input.type = "text";
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      if (kind === "number") input.inputMode = "decimal";
+      input.value = kind === "string" ? item.value.slice(1, -1) : item.value;
+      input.addEventListener("input", () => {
+        const val = input.value;
+        let next = val;
+        let bad = false;
+        if (kind === "number") bad = OptionSettings.kind(val) !== "number";
+        else if (kind === "string") { bad = val.includes('"'); next = `"${val}"`; }
+        el.classList.toggle("invalid", bad);
+        write(r, next);
+      });
+      el.append(lab, input, key);
+    }
+    input.id = id;
+    rows.push(r);
+    v.form.appendChild(el);
+  });
+  v.filter.oninput = refresh;
+  v.only.onchange = refresh;
+  refresh();
+}
+
+function setupOptionsView(card, st, parsed) {
+  const v = optionsView(card);
+  v.bar.hidden = !parsed;
+  v.form.hidden = true;
+  v.form.replaceChildren();
+  v.text.hidden = false;
+  v.filter.value = "";
+  v.only.checked = false;
+  v.count.textContent = "";
+  if (!parsed) { st.mode = "text"; return; }
+  v.formBtn.onclick = () => setOptionsMode(card, st, "form");
+  v.textBtn.onclick = () => setOptionsMode(card, st, "text");
+  setOptionsMode(card, st, "form");
+}
+
 async function loadFiles(id) {
   const card = cardFor(id);
   const pick = card.querySelector(".files-pick");
   card.querySelector(".files-editor").hidden = true;
+  filesDocs(card, null);
   pick.replaceChildren();
   let data;
   try {
@@ -1248,6 +1388,7 @@ async function openFile(id, f) {
   const text = card.querySelector(".files-text");
   const st = filesState[id];
   editor.hidden = true;
+  filesDocs(card, f);
   filesNote(card, "Loading…");
   let data;
   try {
@@ -1255,8 +1396,10 @@ async function openFile(id, f) {
     if (!res.ok) { filesNote(card, await errorText(res)); return; }
     data = await res.json();
   } catch (err) { filesNote(card, "Could not read the file."); return; }
-  st.file = f; st.sha256 = data.sha256; st.original = data.content;
-  text.value = data.content;
+  const parsed = typeof OptionSettings !== "undefined" ? OptionSettings.parse(data.content) : null;
+  st.file = f; st.sha256 = data.sha256; st.options = !!parsed;
+  st.original = parsed ? OptionSettings.expandModel(parsed) : data.content;
+  text.value = st.original;
   editor.hidden = false;
   const hints = [f.path];
   if (f.stop_first) hints.push(f.when_stopped ? "The game rewrites this file when it stops: edit it while the game is stopped." : "The game rewrites this file when it stops, so an edit made now may be lost.");
@@ -1278,6 +1421,7 @@ async function openFile(id, f) {
   };
   text.oninput = check;
   check();
+  setupOptionsView(card, st, parsed);
   await loadVersions(id, card, f);
 }
 
@@ -1298,7 +1442,10 @@ async function loadVersions(id, card, f) {
     if (!sel.value) return;
     const res = await fetch(`/api/games/${encodeURIComponent(id)}/files/${encodeURIComponent(f.id)}/history/${encodeURIComponent(sel.value)}`);
     if (!res.ok) { toast(await errorText(res), "error"); return; }
-    card.querySelector(".files-text").value = (await res.json()).content;
+    const content = (await res.json()).content;
+    const st = filesState[id];
+    card.querySelector(".files-text").value = st.options ? OptionSettings.expand(content) : content;
+    if (st.options && st.mode === "form") setOptionsMode(card, st, "form");
     toast("Loaded into the editor. Press Save to apply it.", "info");
   };
 }
@@ -1334,7 +1481,7 @@ async function saveFile(id, card, restart) {
     const res = await callAPI(`/api/games/${encodeURIComponent(id)}/files/${encodeURIComponent(f.id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text.value, base_sha256: st.sha256, password }),
+      body: JSON.stringify({ content: st.options ? OptionSettings.collapse(text.value) : text.value, base_sha256: st.sha256, password }),
     });
     if (!res.ok) { toast(await errorText(res), "error"); return; }
     const out = await res.json();

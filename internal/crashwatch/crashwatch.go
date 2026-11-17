@@ -6,7 +6,9 @@
 // clean exit) and 143 (SIGTERM, what a stop sends), and other than 137 unless
 // docker says the kernel killed it for memory (137 is also what `docker stop`
 // produces when a game outlasts its grace period, which is a stop, not a
-// crash). A segfault (139), an abort (134) or an error exit all count.
+// crash). A segfault (139), an abort (134) or an error exit all count. A container that docker restarted by
+// itself since the last look counts whatever its exit code now reads, because newer Docker forgets the code
+// as soon as the container runs again.
 package crashwatch
 
 import (
@@ -156,7 +158,8 @@ func (w *Watcher) check(ctx context.Context, d games.GameDef) {
 	// Runs that ended since the last look: one if FinishedAt moved, and more
 	// when docker's restart policy cycled the container between two polls (we
 	// only see the last exit code, so earlier runs share its verdict).
-	ended := max(st.RestartCount-g.restarts, 0)
+	policyRestarts := max(st.RestartCount-g.restarts, 0)
+	ended := policyRestarts
 	if newRun {
 		ended = max(ended, 1)
 	}
@@ -167,8 +170,16 @@ func (w *Watcher) check(ctx context.Context, d games.GameDef) {
 	// The first sighting only records where things stand: a crash from before
 	// CrowsNest started is history, not news.
 	crashed := 0
-	if !first && Crashed(st.ExitCode, st.OOMKilled) {
+	exitKnown := true
+	switch {
+	case first:
+	case Crashed(st.ExitCode, st.OOMKilled):
 		crashed = ended
+	case st.Running && policyRestarts > 0:
+		// Newer Docker resets the exit code to 0 once the container is running again, so the verdict above
+		// sees a clean run. A restart by docker's policy only happens when the container died on its own (a
+		// stop from here never triggers it), so count it even though the exit code is gone.
+		crashed, exitKnown = policyRestarts, false
 	}
 	for i := 0; i < crashed; i++ {
 		g.crashes = append(g.crashes, now)
@@ -195,6 +206,9 @@ func (w *Watcher) check(ctx context.Context, d games.GameDef) {
 
 	if crashed > 0 {
 		detail := fmt.Sprintf("exit code %d", st.ExitCode)
+		if !exitKnown {
+			detail = "restarted by docker (exit code not kept)"
+		}
 		if st.OOMKilled {
 			detail += " (out of memory)"
 		}

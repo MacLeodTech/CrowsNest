@@ -157,8 +157,9 @@ The result is in the activity log (kind `restore`) and in Discord. Things to wat
 - **A restore that would delete its own file is refused.** With `keep: N`, the safety backup pushes the oldest file
   out; asking for that one is refused with a message, before anything is stopped.
 - **Only plain file names** inside the game's own folder are accepted, and only files that are listed there.
-- **The game may not restart by itself.** If the restart is refused (the active-game limit, or the restart cooldown),
-  the game stays stopped and you are told to start it.
+- **The game may not restart by itself.** If the restart is refused (for example the active-game limit), the game
+  stays stopped and you are told to start it. A restart cooldown does not count: the restore waits it out (Palworld's
+  is 30 seconds) and starts the game once it has passed.
 - **A new guard scope per game.** `<id>-restore` has the game's image and folders and nothing else (no ports, no
   exec). The policy admits it by the game's own name, so no `names:` change is needed, and the id `<anything>-restore`
   can no longer be used for a game. The panel rewrites the scopes at start, and the guard reloads them without a restart.

@@ -277,3 +277,29 @@ func TestFilesNeedExecAndAreListedForApproval(t *testing.T) {
 		t.Errorf("the install summary does not mention the files: %v", m.Review())
 	}
 }
+
+// The bundled modules that edit files point each one at its documentation (checked 2026-11-17 to exist).
+func TestBundledFilesHaveDocsLinks(t *testing.T) {
+	want := map[string]string{
+		"palworld/settings":     "https://docs.palworldgame.com/settings-and-operation/configuration",
+		"valheim/adminlist":     "https://www.valheimgame.com/support/a-guide-to-dedicated-servers/",
+		"valheim/permittedlist": "https://www.valheimgame.com/support/a-guide-to-dedicated-servers/",
+		"valheim/bannedlist":    "https://www.valheimgame.com/support/a-guide-to-dedicated-servers/",
+	}
+	got := map[string]string{}
+	for _, m := range Bundled().Manifests() {
+		for _, f := range m.Files {
+			got[m.ID+"/"+f.ID] = f.Docs
+		}
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s docs = %q, want %q", k, got[k], v)
+		}
+	}
+	for k, v := range got {
+		if v == "" {
+			t.Errorf("%s has no docs link", k)
+		}
+	}
+}

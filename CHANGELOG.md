@@ -6,13 +6,38 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Files link to their documentation (done 2026-11-17).** A module's `files:` entry takes an optional `docs:` (an
+  https link; anything else is refused when the module loads), and the Files tab shows it above the editor, opening in
+  a new tab. Palworld links to the official configuration page and Valheim's lists to the official dedicated-server
+  guide; both checked to exist.
+- [x] **Settings files open as a form (done 2026-11-17).** The Files tab turns a one-line `OptionSettings=(...)` file
+  (Palworld) into a labelled field per setting (switches for True/False, boxes for numbers and text), with a filter,
+  a "Changed only" box and a changed count; a Text view shows one setting per line. Save folds it back into the single
+  line. Checked in a real browser against a real Palworld (118 settings): an edit of two settings changed exactly those
+  two on disk, the line stayed one line and the hidden admin password was kept. Unit tests for the reader run with
+  `node --test e2e/unit/*.test.js` (also in CI). Defaults and per-setting help are not shown yet.
+- [x] **Crash detection works on Docker 29 (done 2026-11-17).** Docker 29.8.1 resets a container's exit code to 0 as
+  soon as it restarts, so a game that crashed and was restarted by its restart policy looked like a clean run: no
+  event, no alert, no badge. A restart-count rise while the container is running is now counted as a crash ("restarted
+  by docker (exit code not kept)"). Checked live: three SEGV crashes of a real Minecraft gave three events and a
+  crash-loop alert, and the card showed "crash-looping" in a browser. A Palworld crash may also have been missed before:
+  its init script exits 0 once the server dies.
+- [x] **A restore waits out the restart cooldown (done 2026-11-17).** Found on a real Palworld: the restore stops the
+  game and the module's 30 s restart cooldown then refused the automatic start, so a restore of a running Palworld
+  always left it stopped. It now waits out the remainder and starts the game; checked live (marker file gone, game back
+  online, "starting again" in the activity log). The restore itself (safety backup, stop, helper, world replaced) was
+  checked on the same game first.
+- [x] **Passkeys checked with Windows Hello (done 2026-11-17).** Registration and sign-in worked in a real browser.
+
 - [x] **The card says "crash-looping" (done 2026-11-17).** `/api/games` and the live stream carry `crash_looping`
   while a game is over the crash-loop threshold, and the status badge turns red with that text instead of reading
   "online" between restarts. The status itself is unchanged, so the buttons behave as before.
 - [x] **Palworld settings file is editable, opt-in (done 2026-11-17).** The module has a `manual_settings` option
   (default false) that sets `DISABLE_GENERATE_SETTINGS`, and a Files entry for `PalWorldSettings.ini` with both
-  passwords hidden. Left off, the image still rewrites the file from the form on every start, as before. Not yet
-  tried on a real container.
+  passwords hidden. Left off, the image still rewrites the file from the form on every start, as before. Checked on a real container
+  (2026-11-17): an edit lasts across a restart with the option on and is rewritten with it off, and both passwords stay hidden
+  and kept. It must be turned on only after a first start: on a fresh data folder the image never writes the file and the
+  game sticks on "starting"; the option label and hint now say so.
 
 ## Phase 6 checked on production Palworld
 

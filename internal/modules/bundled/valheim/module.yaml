@@ -38,9 +38,9 @@ backup:
 
 # Player lists, one Steam id per line. The server reads them at start, so restart it after a change.
 files:
-  - {id: adminlist, label: Admins, path: /config/adminlist.txt, max_bytes: 16384, restart: "Restart the server to apply it."}
-  - {id: permittedlist, label: Allowed players, path: /config/permittedlist.txt, max_bytes: 16384, restart: "Restart the server to apply it. An empty list lets everyone in."}
-  - {id: bannedlist, label: Banned players, path: /config/bannedlist.txt, max_bytes: 16384, restart: "Restart the server to apply it."}
+  - {id: adminlist, docs: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/, label: Admins, path: /config/adminlist.txt, max_bytes: 16384, restart: "Restart the server to apply it."}
+  - {id: permittedlist, docs: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/, label: Allowed players, path: /config/permittedlist.txt, max_bytes: 16384, restart: "Restart the server to apply it. An empty list lets everyone in."}
+  - {id: bannedlist, docs: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/, label: Banned players, path: /config/bannedlist.txt, max_bytes: 16384, restart: "Restart the server to apply it."}
 
 options:
   - {key: server_name, label: Server name, default: My Valheim Server}

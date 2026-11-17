@@ -10,7 +10,7 @@ import (
 // container is up, how its last run ended and how often docker has restarted it.
 type ContainerState struct {
 	Running      bool
-	ExitCode     int // of the last finished run; kept while the container runs again
+	ExitCode     int // of the last finished run; newer Docker resets it to 0 once the container runs again
 	OOMKilled    bool
 	FinishedAt   time.Time // zero when it has never stopped
 	RestartCount int

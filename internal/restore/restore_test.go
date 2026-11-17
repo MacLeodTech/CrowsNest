@@ -19,6 +19,7 @@ import (
 	"github.com/macleodtech/crowsnest/internal/backup"
 	"github.com/macleodtech/crowsnest/internal/dockerctl"
 	"github.com/macleodtech/crowsnest/internal/dockerctl/dockertest"
+	"github.com/macleodtech/crowsnest/internal/exclusivity"
 	"github.com/macleodtech/crowsnest/internal/games"
 )
 
@@ -92,6 +93,8 @@ type ctl struct {
 	stopErr  error
 	startErr error
 	onStop   func()
+	// coolOnce makes the first start answer "stopped recently", as a module with a restart cooldown does.
+	coolOnce bool
 }
 
 func (c *ctl) Stop(_ context.Context, id string) error {
@@ -110,6 +113,10 @@ func (c *ctl) Stop(_ context.Context, id string) error {
 
 func (c *ctl) RequestStart(_ context.Context, id string) error {
 	c.e.note("start " + id)
+	if c.coolOnce {
+		c.coolOnce = false
+		return &exclusivity.CooldownError{Game: id, Remaining: time.Millisecond}
+	}
 	return c.startErr
 }
 
@@ -189,6 +196,21 @@ func TestRestore_RunningGameIsStoppedRestoredAndStartedAgain(t *testing.T) {
 	}
 	if f.m.Running("pal") {
 		t.Fatal("still marked running")
+	}
+}
+
+func TestRestore_WaitsOutTheRestartCooldownAndStartsAgain(t *testing.T) {
+	f := newFixture(t, 0)
+	f.c.coolOnce = true
+	if err := f.m.Request(context.Background(), f.def, "mid.tgz", "alex", true); err != nil {
+		t.Fatal(err)
+	}
+	f.m.Wait()
+	if got := strings.Join(f.e.log, ","); !strings.HasSuffix(got, "start pal,start pal") {
+		t.Fatalf("sequence = %s, want the start retried once", got)
+	}
+	if ev := f.rec.events[0]; !strings.Contains(ev, "starting again") {
+		t.Fatalf("event = %q", ev)
 	}
 }
 

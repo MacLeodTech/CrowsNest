@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
 	"regexp"
 	"sort"
@@ -39,6 +40,8 @@ type Spec struct {
 	StopFirst bool `yaml:"stop_first" json:"stop_first"`
 	// Redact lists regular expressions; for each line one matches, capture group 1 (the value) is hidden in the editor.
 	Redact []string `yaml:"redact" json:"-"`
+	// Docs is an https link to documentation about this file, shown beside it in the Files tab.
+	Docs string `yaml:"docs" json:"docs,omitempty"`
 }
 
 const (
@@ -77,6 +80,9 @@ func Normalize(specs []Spec) ([]Spec, error) {
 		if s.Restart == "" {
 			s.Restart = "required"
 		}
+		if err := checkDocs(s.Docs); err != nil {
+			return nil, fmt.Errorf("files[%s]: docs: %w", s.ID, err)
+		}
 		for _, p := range s.Redact {
 			re, err := regexp.Compile(p)
 			if err != nil {
@@ -89,6 +95,27 @@ func Normalize(specs []Spec) ([]Spec, error) {
 		out[i] = s
 	}
 	return out, nil
+}
+
+// checkDocs accepts an empty link or a plain https URL: it is shown as a clickable link to admins, so no other
+// scheme, no embedded login, and nothing that is not printable.
+func checkDocs(d string) error {
+	if d == "" {
+		return nil
+	}
+	if len(d) > 300 {
+		return errors.New("must be at most 300 characters")
+	}
+	for _, r := range d {
+		if r <= ' ' || r == 0x7f || r == '"' || r == '\'' || r == '<' || r == '>' || r == '`' {
+			return errors.New("has characters that are not allowed in a link")
+		}
+	}
+	u, err := url.Parse(d)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil {
+		return errors.New("must be an https:// link")
+	}
+	return nil
 }
 
 func checkPath(p string) error {

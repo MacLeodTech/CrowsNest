@@ -114,6 +114,26 @@ func TestRestartPolicyCyclesBetweenPollsAreCounted(t *testing.T) {
 	}
 }
 
+// Docker 29 resets the exit code to 0 once a restarted container is running, so only the restart count shows that
+// the game died. Seen on a real Minecraft killed with SIGSEGV (docker's die event said 255; inspect said 0).
+func TestRestartedByDockerWithForgottenExitCodeCounts(t *testing.T) {
+	w, d, ev, _, clock := setup(t)
+	ctx := context.Background()
+	d.st = dockerctl.ContainerState{Running: true, FinishedAt: *clock}
+	w.Tick(ctx)
+	for i := 1; i <= 3; i++ {
+		*clock = clock.Add(time.Minute)
+		d.st = dockerctl.ContainerState{Running: true, ExitCode: 0, RestartCount: i, FinishedAt: *clock}
+		w.Tick(ctx)
+	}
+	if w.Total("pal") != 3 || !w.Looping("pal") {
+		t.Fatalf("total=%d looping=%v, want 3 crashes and a loop", w.Total("pal"), w.Looping("pal"))
+	}
+	if len(ev.got) == 0 || !strings.Contains(ev.got[0], "restarted by docker") {
+		t.Fatalf("events = %v", ev.got)
+	}
+}
+
 func TestStopsAreNotCrashes(t *testing.T) {
 	w, d, _, _, clock := setup(t)
 	ctx := context.Background()

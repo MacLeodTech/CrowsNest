@@ -58,6 +58,8 @@ jobs:
       # The dashboard (real code, fake docker) runs as a Go test on the runner; the browser is the official
       # Playwright image, so nothing is installed on the host. See e2e/README.md.
       - run: CI=1 ./e2e/run-docker.sh
+      # The Files tab's settings reader (optionsettings.js) is plain JavaScript; its tests need only Node.
+      - run: node --test e2e/unit/*.test.js
 
   integration:
     name: real Docker (guard + client + a tiny image)

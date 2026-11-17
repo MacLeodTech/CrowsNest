@@ -47,7 +47,7 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
   Minecraft from the public URL, switched it on, added its image to `policy.yaml` on the host, added the game, started
   and stopped it (healthy on the chosen port). Rough edge found: a game whose first image pull the guard refused
   stays `failed`; Update image does re-run it, so the card now says **Retry install** (#47).
-- [ ] **Try passkeys in a real browser** (Windows Hello, a phone, a security key): the server side is tested with a software authenticator only.
+- [x] **Try passkeys in a real browser.** Windows Hello worked (2026-11-17). A phone and a security key are untried.
 - [ ] **Track C checks against real servers:** idle and night auto-stop with Discord notices (see C below), and the
   Windrose invite-code join. Done 2026-11-16 on the test stack: crash-loop detection against a container that really
   exits (one alert, to a webhook), and Minecraft backup and restore on a real world.
@@ -78,11 +78,11 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   `config.yaml` entry and the `palworld-restore` guard scope; see `docs/backups.md`), and Valheim, Source, 7 Days to
   Die and Don't Starve Together on real worlds. Config-file games still back up inside their own data and would need
   the bind added by hand.
-- [ ] **File editing, next steps:** `files:` for
-  Source, Don't Starve Together and 7 Days to Die. **Palworld:** done as an opt-in `manual_settings` option (see `CHANGELOG.md`); check it on a real container. Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
+- [ ] **File editing, next steps:** **Palworld:** done as an opt-in `manual_settings` option and checked on a real container (see `CHANGELOG.md`). Windrose's world settings (`WorldDescription.json`, under a world id and version folder) can use
   a `*` path (done and checked behind the real guard 2026-11-16, so long as the `*` is not in the extension); the
   module still needs writing once the layout is read off a real container (needs OK for the host networking change).
-  A settings editor in the module form, with named fields, would serve both games better than raw files.
+  The Files tab now shows Palworld's settings as a form (see `CHANGELOG.md`). Left: defaults and a short help text
+  per setting, and the same for Windrose's `WorldDescription.json`.
   A stopped-game edit for games set up in `config.yaml` (low value).
 - [ ] Crash-loop detection is untested against a real crashing container (also in track C).
 
@@ -92,7 +92,7 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 - [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup.
 - [ ] **Valheim crossplay join code and player names** on a real server with `CROSSPLAY=1` (the log patterns are from
   the known format, not a capture).
-- [ ] **Idle/night auto-stop and Discord notifications** against real servers. Webhook notices are verified on the
+- [ ] **Idle/night auto-stop and Discord notifications** (backlog 2026-11-17: the real Discord webhook check) against real servers. Webhook notices are verified on the
   test stack (start, stop, backup, restore, crash loop, offsite) but the Discord channel itself is not: it only
   accepts discord.com addresses, so it needs a real webhook. A game gets a fixed one-hour grace until a player has
   been seen, which makes this slow to test; the notice on a real idle stop was due about 20:35 on 2026-11-16, so
@@ -100,6 +100,8 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### Backlog (parked, come back to it later)
 
+- [ ] **`files:` entries for the Source, Don't Starve Together and 7 Days to Die modules.** Parked by the owner on
+  2026-11-17. The modules live in the modules repository; confirm each config path against the real image first.
 - [ ] **Discord slash commands** (track B). Parked by the owner on 2026-11-12. Needs a Discord application and its
   public key before it can start.
 
