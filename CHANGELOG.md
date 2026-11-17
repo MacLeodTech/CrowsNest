@@ -6,13 +6,17 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Passkeys checked with Windows Hello (done 2026-11-17).** Registration and sign-in worked in a real browser.
+
 - [x] **The card says "crash-looping" (done 2026-11-17).** `/api/games` and the live stream carry `crash_looping`
   while a game is over the crash-loop threshold, and the status badge turns red with that text instead of reading
   "online" between restarts. The status itself is unchanged, so the buttons behave as before.
 - [x] **Palworld settings file is editable, opt-in (done 2026-11-17).** The module has a `manual_settings` option
   (default false) that sets `DISABLE_GENERATE_SETTINGS`, and a Files entry for `PalWorldSettings.ini` with both
-  passwords hidden. Left off, the image still rewrites the file from the form on every start, as before. Not yet
-  tried on a real container.
+  passwords hidden. Left off, the image still rewrites the file from the form on every start, as before. Checked on a real container
+  (2026-11-17): an edit lasts across a restart with the option on and is rewritten with it off, and both passwords stay hidden
+  and kept. It must be turned on only after a first start: on a fresh data folder the image never writes the file and the
+  game sticks on "starting"; the option label and hint now say so.
 
 ## Phase 6 checked on production Palworld
 

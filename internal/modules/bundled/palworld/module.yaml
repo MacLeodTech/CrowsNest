@@ -54,17 +54,19 @@ backup:
 # The image rebuilds PalWorldSettings.ini from the options below on every start, so an edit made in the Files tab
 # only lasts when "manual_settings" is true. Turning it on stops the form options from being written to the file
 # (the file as last generated is kept, so the REST API and passwords keep working); change them in the file instead.
+# Turn it on only AFTER the game has started once with it off: on a fresh data folder the image then never generates
+# the file, leaves the stock sample (REST API off), and CrowsNest sees the game stuck on "starting" (checked 2026-11-17).
 files:
   - id: settings
     label: PalWorldSettings.ini
     path: /palworld/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini
     max_bytes: 32768
-    restart: "Restart to apply it. It lasts only while 'Edit the settings file by hand' is true; otherwise the image rewrites it from the form on every start."
+    restart: "Restart to apply it. It lasts only while 'Edit the settings file by hand' is true (turn that on after the first start); otherwise the image rewrites it from the form on every start."
     stop_first: true
     redact: ['AdminPassword="([^"]*)"', 'ServerPassword="([^"]*)"']
 
 options:
-  - {key: manual_settings, label: "Edit the settings file by hand (true or false; the form options below then stop applying to the file)", default: "false"}
+  - {key: manual_settings, label: "Edit the settings file by hand: true or false. Turn on only after the game has started once; the form options below then stop applying to the file", default: "false"}
   - {key: max_players, label: Max players, default: "8"}
   - {key: server_name, label: Server name, default: CrowsNest Palworld}
   - {key: server_password, label: Join password, secret: true}
