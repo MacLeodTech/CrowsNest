@@ -6,6 +6,14 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Windrose world settings file and macvlan in the compose template (done 2026-11-17).** The Windrose module
+  declares a `files:` entry for `WorldDescription.json` (path `.../RocksDB_v2/*/Worlds/*/WorldDescription.json`, edited
+  while stopped, applied by the image's world updater on the next start). Checked against the real server folder:
+  the pattern matches exactly one file. The stopped-game helper's guard scope now lists only the network it attaches
+  to, so a file edit on Windrose never gets the macvlan. `compose.yaml.example` now puts Windrose on a macvlan
+  network (`lan`, from the `LAN_*` and `WINDROSE_LAN_IP` values in `.env.example`) instead of host networking, and the
+  module's network host step points at it. The policy exception stays a host-side step: the Games tab writes out the
+  block and ticks it once the guard has it (the dashboard still cannot grant it, by choice).
 - [x] **Files link to their documentation (done 2026-11-17).** A module's `files:` entry takes an optional `docs:` (an
   https link; anything else is refused when the module loads), and the Files tab shows it above the editor, opening in
   a new tab. Palworld links to the official configuration page and Valheim's lists to the official dedicated-server

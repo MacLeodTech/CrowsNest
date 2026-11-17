@@ -193,7 +193,11 @@ services:
   #     # same path and set GUARD_MODULES_DIR to it: the guard checks signed modules and, with --exec, learns their
   #     # backup and file commands from it (see docs/modules.md).
 
-  # Windrose: host networking and an invite code (the game's own P2P relay), so players need no port forward.
+  # Windrose: an invite code (the game's own P2P relay), so players need no port forward. The relay needs the
+  # server to advertise a real LAN address, so it joins your LAN through the macvlan network `lan` declared at the
+  # bottom of this file (set LAN_* and WINDROSE_LAN_IP in .env first). It stays on the default network too, so
+  # crowsnest can read its logs. The macvlan address can reach this host's own services, so keep it away from the
+  # host with firewall rules (see the host steps on the Games page, or docs/modules.md).
   # Everything lives in one directory, ${USERDIR}/Windrose, which is the server's install folder: the world
   # is R5/Saved/SaveProfiles/Default/ inside it, and Windrose+ keeps windrose_plus.json beside it. Point
   # this at an existing server folder to keep its save.
@@ -203,7 +207,11 @@ services:
     container_name: windrose
     restart: unless-stopped
     stop_grace_period: 30s
-    network_mode: host
+    networks:
+      default: {}
+      lan:
+        ipv4_address: ${WINDROSE_LAN_IP:-}   # fixed, inside LAN_IP_RANGE; also P2P_PROXY_ADDRESS
+        gw_priority: 100                     # the LAN wins the default route
     security_opt:
       - seccomp:unconfined   # required by the image's Wine runtime
     environment:
@@ -214,7 +222,7 @@ services:
       - SERVER_PASSWORD=${WINDROSE_SERVER_PASSWORD:-}
       - INVITE_CODE=${WINDROSE_INVITE_CODE:-}           # what players type to join
       - MAX_PLAYERS=${WINDROSE_MAX_PLAYERS:-4}
-      - P2P_PROXY_ADDRESS=${P2P_PROXY_ADDRESS:-}        # host LAN IP, set in .env
+      - P2P_PROXY_ADDRESS=${WINDROSE_LAN_IP:-}          # the macvlan address above
       - UPDATE_ON_START=true
       - WINDROSE_PLUS_ENABLED=${WINDROSE_PLUS_ENABLED:-false}
       - WINDROSE_PLUS_RCON_PASSWORD=${WINDROSE_RCON_PASSWORD:-}
@@ -279,3 +287,23 @@ services:
       - OLD_BACKUP_DAYS=14
     volumes:
       - ${USERDIR}/Palworld:/palworld
+
+# Networks. Only Windrose uses `lan`: a macvlan network gives the container its own address on your LAN. Docker
+# creates it the first time a service on it is created (docker compose --profile windrose up --no-start), so
+# nothing happens until you ask for Windrose. Fill in the LAN_* values in .env from your router: the NIC that
+# faces the LAN, its subnet and gateway, and a small ip-range OUTSIDE your router's DHCP pool that holds
+# WINDROSE_LAN_IP. The name is what a dashboard-enabled Windrose calls "LAN (macvlan) network".
+#
+# Already have a macvlan network (the host steps on the Games page check for one)? Replace the body with
+#   lan: {name: dockervlan, external: true}
+networks:
+  lan:
+    name: ${LAN_NETWORK:-dockervlan}
+    driver: macvlan
+    driver_opts:
+      parent: ${LAN_PARENT_NIC:-eth0}
+    ipam:
+      config:
+        - subnet: ${LAN_SUBNET:-192.168.1.0/24}
+          gateway: ${LAN_GATEWAY:-192.168.1.1}
+          ip_range: ${LAN_IP_RANGE:-192.168.1.240/29}

@@ -61,7 +61,9 @@ host_setup:
     detail: >-
       Windrose joins your LAN through a macvlan network, so players' invite-code relay sees a real LAN address.
       Check it exists. If it does not, create it on the NIC that faces your LAN, with your LAN's subnet and
-      gateway, and an ip-range that does not overlap your router's DHCP pool.
+      gateway, and an ip-range that does not overlap your router's DHCP pool. (compose.yaml.example declares the
+      same network as `lan`, driven by the LAN_* values in .env: fill them in and run
+      docker compose --profile windrose up --no-start instead.)
     command: >-
       docker network inspect {lan_network} --format '{{.Driver}} {{range .IPAM.Config}}{{.Subnet}} {{end}}'
       || docker network create -d macvlan --subnet=<lan-subnet> --gateway=<lan-gateway> --ip-range=<small-range> -o parent=<nic> {lan_network}
@@ -86,6 +88,18 @@ backup:
   dir: /home/steam/server-files/backups
   before_stop: true
   restore: ["/bin/sh", "-c", "set -e; rm -rf /home/steam/server-files/R5/Saved/SaveProfiles; tar xzf \"$CROWSNEST_RESTORE_FILE\" -C /home/steam/server-files/R5/Saved; chown -R 1000:1000 /home/steam/server-files/R5/Saved/SaveProfiles"]
+
+# World settings (difficulty preset and multipliers). The world folder and the game version are made up by the game,
+# hence the two `*`. The image runs R5WorldDescriptionUpdater on every start, so a restart applies an edit. The
+# server description (name, password, invite code) is not offered: the image rewrites it from the form on every start.
+files:
+  - id: world
+    label: WorldDescription.json
+    path: /home/steam/server-files/R5/Saved/SaveProfiles/Default/RocksDB_v2/*/Worlds/*/WorldDescription.json
+    max_bytes: 32768
+    docs: https://github.com/indifferentbroccoli/windrose-server-docker
+    restart: "Restart to apply it: the image runs the game's world updater on start. Any custom value turns the preset into Custom. Needs exactly one world; with several, this file cannot be picked."
+    stop_first: true
 
 options:
   - {key: server_name, label: Server name, default: My Windrose Server}
