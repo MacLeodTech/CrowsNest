@@ -79,11 +79,9 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   `docs/backups.md`), and Valheim, Source, 7 Days to
   Die and Don't Starve Together on real worlds. Config-file games still back up inside their own data and would need
   the bind added by hand.
-- [ ] **File editing, next steps:** Palworld's form and the Windrose `WorldDescription.json` file are done (see
-  `CHANGELOG.md`). Left: check the Windrose edit on a running server (restart applies it via the image's updater;
-  not tried with a real save yet), a form for it (its settings are JSON tag keys with bool, float and tag values,
-  so it needs its own reader, not the `OptionSettings` one), and a stopped-game edit for games set up in
-  `config.yaml` (low value).
+- [ ] **File editing, next steps:** Palworld's form and the Windrose `WorldDescription.json` file and form are done
+  (see `CHANGELOG.md`). Left: check a Windrose edit on a running server with a real save (restart applies it via the
+  image's updater; not tried yet), and a stopped-game edit for games set up in `config.yaml` (low value).
 
 ### C. Verify and harden (open, against real servers)
 

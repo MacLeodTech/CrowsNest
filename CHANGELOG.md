@@ -6,6 +6,15 @@ Newest first within each part. Design detail for the modular-games rework is in
 
 ## Crash-looping shown on the dashboard card
 
+- [x] **Windrose world settings as a form (done 2026-11-17).** `WorldDescription.json` opens in the Files tab as a
+  form: preset drop-down, switches, multipliers with the documented range and default, combat difficulty
+  drop-down, Reset links, filter and "Changed only". A save replaces only the changed values in the text (a small
+  span-aware reader, `worlddescription.js`), so the file's layout and its large `CreationTime` stay byte for byte.
+  The form is chosen by the file's content, not by a module setting. Checked in a real browser on a copy of the real
+  server file (11 settings; four edits changed exactly four lines; a typed non-number is not applied; out-of-range
+  and preset-becomes-Custom notes show). Also fixed for every file: the real file uses CRLF line endings, which a
+  textarea turns into LF, so every line counted as changed and a save would have rewritten the endings. They are now
+  restored on save. Unit tests in `e2e/unit/worlddescription.test.js`.
 - [x] **Windrose world settings file and macvlan in the compose template (done 2026-11-17).** The Windrose module
   declares a `files:` entry for `WorldDescription.json` (path `.../RocksDB_v2/*/Worlds/*/WorldDescription.json`, edited
   while stopped, applied by the image's world updater on the next start). Checked against the real server folder:
