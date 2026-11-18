@@ -19,6 +19,12 @@ Newest first within each part. Design detail for the modular-games rework is in
 - [x] **Passkeys with Windows Hello (2026-11-17).** A phone and a security key are untried.
 - [x] **Palworld on the restored world (2026-11-18).** A player joined save `A826860D…`, it saved, a panel stop took
   a backup (`palworld-save-…tar.gz`, 1 s), and a restart and rejoin kept the changes.
+- [x] **Valheim on the restored world (2026-11-18).** World `Midgard` saved on shutdown and kept the changes after a
+  restart. Its panel stop backup lags one save behind (tracked in the roadmap).
+- [x] **Windrose on the restored world, LAN (2026-11-18).** Old world `320FFB65…`: joined by invite code from the
+  LAN, saved, a panel stop took a backup (`world-20261118-072027.tar.gz`) with a graceful shutdown, and a restart and
+  rejoin kept the changes. The startup bar showed download progress (v0.16.23) and the "ready for owner to connect"
+  line appeared. The join from outside the LAN is still open.
 - [x] **Crash detection on a real Palworld (2026-11-18).** Killing `PalServer-Linux-Shipping` with SIGKILL made the
   init script exit 0 and Docker restart the container; crashwatch logged `palworld crashed: restarted by docker`
   about 24 s later. (Crash-loop detection was checked on a real Minecraft, 2026-11-17.) No Discord notice was
