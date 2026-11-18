@@ -23,14 +23,20 @@ Origin: the full review at `35f22b6` (v0.13.0; `go vet`, `go test ./...` and `go
 
 #### Now: finish the live checks (one play session each)
 
-- [ ] **Valheim and Windrose play-tests** (track C): a player joins each restored world, it saves, a panel stop
-  takes a backup, and a restart keeps the changes. Palworld passed this on 2026-11-18.
+- [ ] **Windrose play-test** (track C): a player joins the restored world, it saves, a panel stop takes a backup,
+  and a restart keeps the changes. Palworld and Valheim passed this on 2026-11-18 (Valheim: shutdown save written,
+  changes kept after a restart and rejoin).
 - [ ] **Windrose checks** in the same session: invite-code join from the LAN and from outside, the startup bar
   (module must update on prod first), and the log markers on a graceful quit.
 - [ ] **Valheim crossplay** join code and player names with `CROSSPLAY=1`.
 
 #### Next: data safety and ops
 
+- [ ] **Valheim stop backup is taken before the shutdown save.** Valheim has no on-demand save, so the panel's
+  stop backup runs first and holds the previous autosave (seen 2026-11-18: backup had `_main.3` at 07:10:15, the
+  shutdown save wrote `_main.4` at 07:10:18). The world is safe, but a restore loses up to one autosave interval.
+  Likely fix: for games with no `pre_stop` save, take a second backup after the container exits. Check
+  Palworld's stop backup too (it autosaves every 30 seconds, so the gap should be small).
 - [ ] **Set up the offsite backups sidecar on prod.** Today the only copies of the worlds are on the same disk
   (`game-backups`, `game-backups-temp`).
 - [ ] **Commit the CrowsNest parts of `~/docker`** (compose, config, policy, README). They are uncommitted and mixed
@@ -78,9 +84,9 @@ Origin: the full review at `35f22b6` (v0.13.0; `go vet`, `go test ./...` and `go
 
 - [ ] **Play-test the restored worlds on prod.** The fresh layout is live (games under
   `~/docker/storage/game-servers`, backups under `game-backups`). **Palworld passed on 2026-11-18:** a player joined
-  save `A826860D…`, it saved, a panel stop took a backup, and a restart and rejoin kept the changes. Left: Valheim
-  (world copied to `Midgard`, loads 1,024,867 objects) and Windrose (old world `320FFB65…`); neither has had a
-  player join yet.
+  save `A826860D…`, it saved, a panel stop took a backup, and a restart and rejoin kept the changes. **Valheim passed on 2026-11-18:**
+  world `Midgard` saved on shutdown and kept the changes after a restart; its stop backup lags one save behind (see
+  Next). Left: Windrose (old world `320FFB65…`), which has not had a player join yet.
 - [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup. The server is added
   and enabled on prod (`dockervlan` 10.0.1.16, games net 192.168.0.50, Windrose+ dashboard answers on :8780).
 - [ ] **Check the Windrose startup bar on the next start** (v0.16.23 adds the download percentage and first-run
