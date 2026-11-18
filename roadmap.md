@@ -27,7 +27,7 @@ inside a tier, top to bottom. Items that already live in track A, B or C are nam
 
 - [x] **R4 (ops). Upgrade production from 0.11.0 to 0.16.2.** Done 2026-11-16: template-check reconciled, game
   containers created (`up --no-start`), master key added, panel, execguard and guard recreated and healthy.
-  Prod now runs v0.16.19 (checked 2026-11-17). Two things the upgrade needed that the templates don't say yet: `users.env` and the session secret must live in
+  Prod now runs v0.16.23 (checked 2026-11-17). Two things the upgrade needed that the templates don't say yet: `users.env` and the session secret must live in
   the writable data folder (`users_file: /app/data/users.env`, `session_secret_file: /app/data/.session_secret`),
   because 0.16 rewrites them through a temp file in the same directory and a single-file bind mount under a
   read-only root fails (the panel crash-looped on "read-only file system"); and execguard now needs the
@@ -85,10 +85,17 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
 
 ### C. Verify and harden (open, against real servers)
 
+- [ ] **Play-test the restored worlds on prod (2026-11-17).** The fresh layout is live (games under
+  `~/docker/storage/game-servers`, backups under `game-backups`). Valheim (world copied to `Midgard`, loads 1,024,867
+  objects) and Palworld (save `A826860D…`) both started and loaded their restored saves, and Windrose runs on the old
+  world `320FFB65…`; none has had a player join yet, and Palworld has not saved to the restored folder.
 - [ ] **Re-test crash detection on a real Palworld.** Its init script exits 0 when the server dies, so the Docker 29
   fix may now catch it (crash-loop detection itself was checked on a real Minecraft, 2026-11-17). Prod `palworld` is
   stopped on purpose until someone wants to play, so this needs it started first.
-- [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup.
+- [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup. The server is added
+  and enabled on prod (`dockervlan` 10.0.1.16, games net 192.168.0.50, Windrose+ dashboard answers on :8780).
+- [ ] **Check the Windrose startup bar on the next start** (v0.16.23 adds the download percentage and first-run
+  steps from the real log; the module must update on prod first). The "ready for owner to connect" line did appear.
 - [ ] **Valheim crossplay join code and player names** on a real server with `CROSSPLAY=1` (the log patterns are from
   the known format, not a capture).
 - [ ] **Idle/night auto-stop and Discord notifications** (backlog 2026-11-17: the real Discord webhook check) against real servers. Webhook notices are verified on the
@@ -98,6 +105,12 @@ Done (passkeys, the Allow switch); see `CHANGELOG.md`. What is left of them is t
   2026-11-17, so run it again. Check the firewall for `:5001` and game ports.
 
 ### Backlog (parked, come back to it later)
+
+- [ ] **Prod loose ends (2026-11-17):** Discord webhook is not set (`DISCORD_WEBHOOK_URL` empty); the offsite backups
+  sidecar is not set up; the `~/docker` git changes (compose, README, policy) are uncommitted; panel stop and
+  start of a game done outside the panel (plain `docker`) skip its backup, so test starts should go through the panel.
+  The Valheim config `backups` folder was not restored, and the old game folders and archives sit in
+  `~/docker/storage/retired-prod` and `game-backups-temp` until you are happy to delete them.
 
 - [ ] **`files:` entries for the Source, Don't Starve Together and 7 Days to Die modules.** Parked by the owner on
   2026-11-17. The modules live in the modules repository; confirm each config path against the real image first.
