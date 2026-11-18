@@ -4,6 +4,26 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Prod verification (2026-11-16 to 2026-11-18)
+
+- [x] **Upgrade prod from 0.11.0 (R4).** Done 2026-11-16: template-check reconciled, game containers created, master
+  key added, panel, execguard and guard recreated and healthy; prod runs v0.16.23. `users.env` and the session secret
+  must live in the writable data folder (`users_file: /app/data/users.env`, `session_secret_file:
+  /app/data/.session_secret`) because 0.16 rewrites them through a temp file and a single-file bind mount under a
+  read-only root fails; execguard also needs the `policy` folder mounted.
+- [x] **Phase 5 live checks (R5), 2026-11-16, real browser:** signed install of Minecraft from the public
+  crowsnest-modules URL, module update check and apply, "Make a copy", the offsite banner, Start→Switch between two
+  real games. Found: the update diff lists permission changes only; a game failing for a missing module only
+  recovers after a restart (both tracked in the roadmap).
+- [x] **Signed-module Allow switch on a real guard (2026-11-16)** and the **Retry install** card (#47).
+- [x] **Passkeys with Windows Hello (2026-11-17).** A phone and a security key are untried.
+- [x] **Palworld on the restored world (2026-11-18).** A player joined save `A826860D…`, it saved, a panel stop took
+  a backup (`palworld-save-…tar.gz`, 1 s), and a restart and rejoin kept the changes.
+- [x] **Crash detection on a real Palworld (2026-11-18).** Killing `PalServer-Linux-Shipping` with SIGKILL made the
+  init script exit 0 and Docker restart the container; crashwatch logged `palworld crashed: restarted by docker`
+  about 24 s later. (Crash-loop detection was checked on a real Minecraft, 2026-11-17.) No Discord notice was
+  checked: the webhook is not set on prod.
+
 ## Enable with the defaults (2026-11-17)
 
 - [x] **Add form: secrets first, random secrets by default.** Passwords and codes sit at the top of the form
