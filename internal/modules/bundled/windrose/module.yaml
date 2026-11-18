@@ -123,5 +123,15 @@ players:
   type: log_markers
   join: 'LogNet: Login request: \?BLPlayerSessionId=([0-9a-f]{32})'
   leave: 'UNetDriver::RemoveClientConnection - Removed address R5:([0-9a-f]{32}):'
+startup_progress:
+  match: '^\s*(\d+(?:\.\d+)?)% /home/steam/server-files'
+  from: 8
+  to: 80
+  label: 'Downloading server files ({pct}%)'
 startup:
+  - {match: 'Installing Windrose Dedicated Server', pct: 5, label: Checking for updates}
+  - {match: 'Installing/updating Windrose\+', pct: 82, label: Installing Windrose+}
+  - {match: 'First boot detected', pct: 85, label: Generating first-run config}
+  - {match: 'Rebuilding Windrose\+ override PAK', pct: 90, label: Building Windrose+ files}
+  - {match: 'Server is starting', pct: 94, label: Starting server}
   - {match: 'Host server is ready for owner to connect', pct: 100, label: Host server ready}
