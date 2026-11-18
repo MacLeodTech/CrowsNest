@@ -23,11 +23,9 @@ Origin: the full review at `35f22b6` (v0.13.0; `go vet`, `go test ./...` and `go
 
 #### Now: finish the live checks (one play session each)
 
-- [ ] **Windrose play-test** (track C): a player joins the restored world, it saves, a panel stop takes a backup,
-  and a restart keeps the changes. Palworld and Valheim passed this on 2026-11-18 (Valheim: shutdown save written,
-  changes kept after a restart and rejoin).
-- [ ] **Windrose checks** in the same session: invite-code join from the LAN and from outside, the startup bar
-  (module must update on prod first), and the log markers on a graceful quit.
+- [ ] **Windrose join from outside the LAN:** a friend joins by invite code `TwoManSquad`. The LAN join, save, panel
+  stop backup, graceful shutdown and restart-and-rejoin passed on 2026-11-18 (see track C).
+- [ ] **Windrose Files-tab edit** (the world-settings form) on a running server, then a restart to apply it.
 - [ ] **Valheim crossplay** join code and player names with `CROSSPLAY=1`.
 
 #### Next: data safety and ops
@@ -63,7 +61,7 @@ Origin: the full review at `35f22b6` (v0.13.0; `go vet`, `go test ./...` and `go
 
 ### A. Modular games (open)
 
-- [ ] **Phase 2 leftovers:** the Windrose log markers on a graceful quit (in "Now" above); the Tier 2
+- [ ] **Phase 2 leftovers:** the Tier 2
   adapter-sidecar contract is deferred until a module needs it.
 - [ ] **Phase 5 leftovers:** installing a module whose image the
   policy does not list (shown as "needs policy lines"). The extra port range is edited in `policy.yaml`.
@@ -86,10 +84,12 @@ Origin: the full review at `35f22b6` (v0.13.0; `go vet`, `go test ./...` and `go
   `~/docker/storage/game-servers`, backups under `game-backups`). **Palworld passed on 2026-11-18:** a player joined
   save `A826860D…`, it saved, a panel stop took a backup, and a restart and rejoin kept the changes. **Valheim passed on 2026-11-18:**
   world `Midgard` saved on shutdown and kept the changes after a restart; its stop backup lags one save behind (see
-  Next). Left: Windrose (old world `320FFB65…`), which has not had a player join yet.
-- [ ] **Windrose invite-code join** from the LAN and from outside, on the macvlan setup. The server is added
+  Next). **Windrose passed on 2026-11-18** (old world `320FFB65…`): joined by invite code from the LAN, saved, a panel stop
+  took a backup (`world-20261118-072027.tar.gz`) with a graceful shutdown, and a restart and rejoin kept the changes.
+  Left: the join from outside the LAN and a Files-tab edit (see Now).
+- [ ] **Windrose invite-code join from outside the LAN** (the LAN join passed), on the macvlan setup. The server is added
   and enabled on prod (`dockervlan` 10.0.1.16, games net 192.168.0.50, Windrose+ dashboard answers on :8780).
-- [ ] **Check the Windrose startup bar on the next start** (v0.16.23 adds the download percentage and first-run
+- [x] **Check the Windrose startup bar on the next start** (checked 2026-11-18: it showed progress) (v0.16.23 adds the download percentage and first-run
   steps from the real log; the module must update on prod first). The "ready for owner to connect" line did appear.
 - [ ] **Valheim crossplay join code and player names** on a real server with `CROSSPLAY=1` (the log patterns are from
   the known format, not a capture).
