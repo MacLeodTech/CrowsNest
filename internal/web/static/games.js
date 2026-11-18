@@ -44,6 +44,21 @@ function imageLine(g) {
   return p;
 }
 
+// generatedLine lists the passwords and codes the panel made up for a game, so they can be passed to players.
+function generatedLine(g) {
+  const gen = g.generated || {};
+  const keys = Object.keys(gen);
+  if (!keys.length) return null;
+  const m = moduleById(g.module);
+  const p = el("p", "fleet-image");
+  keys.forEach((k) => {
+    const o = ((m && m.options) || []).find((x) => x.key === k);
+    p.append(el("span", "fleet-image-tag", `${(o && o.label) || k}: `), el("code", "fleet-digest", gen[k]));
+  });
+  p.title = "Made up when the game was added. Edit the game to set your own.";
+  return p;
+}
+
 // reportImage tells the outcome of an Update image or Roll back once the game has settled.
 function reportImage(g) {
   const kind = pendingImage[g.id];
@@ -82,6 +97,8 @@ function renderFleet(configured) {
     const m = moduleById(g.module);
     const c = fleetCard(g.display_name || g.id, `${m ? m.name : g.module} · added here`, stateBadge(g.state));
     c.append(imageLine(g));
+    const gl = generatedLine(g);
+    if (gl) c.append(gl);
     if (g.state === "failed" && g.error) c.append(el("p", "settings-error", g.error.slice(-300)));
     const row = el("div", "fleet-actions");
     const busy = g.state === "installing";
@@ -317,7 +334,12 @@ function buildForm(values = {}) {
   if (!m) return;
   // Settings that need an answer (required or secret) come first; the rest sit under "More settings".
   const opts = (m.options || []).filter((o) => o.key !== "image");
-  const main = opts.filter((o) => !o.auto && (o.required || o.secret || /eula/i.test(o.key)));
+  // Passwords and codes come first (the invite code and join password matter most), then anything else required.
+  // Every field has a default or is generated, so Enable works with nothing typed.
+  const main = [
+    ...opts.filter((o) => !o.auto && o.secret && !/_env$/.test(o.key)),
+    ...opts.filter((o) => !o.auto && !o.secret && (o.required || /eula/i.test(o.key))),
+  ];
   const more = opts.filter((o) => !main.includes(o));
   const addTo = (root, o) => {
     const label = el("label", "field");
@@ -328,8 +350,7 @@ function buildForm(values = {}) {
     input.autocomplete = "off";
     input.spellcheck = false;
     if (o.secret) {
-      input.placeholder = editing ? "leave empty to keep the current value" : copying ? `leave empty to use the same as ${copying}` : "";
-      input.required = !!o.required && !editing && !copying;
+      input.placeholder = editing ? "leave empty to keep the current value" : copying ? `leave empty to use the same as ${copying}` : (o.generate ? "leave empty to make one up" : "optional (empty means none)");
     } else if (o.auto) {
       // Wiring that follows from the game itself: left empty, it is filled in automatically.
       input.value = values[o.key] !== undefined ? values[o.key] : "";
@@ -550,13 +571,22 @@ form.addEventListener("submit", async (e) => {
     : await callAPI("/api/managed/games", { method: "POST", body: JSON.stringify(req) });
   if (!res.ok) { showError(await errorText(res)); $("enable").disabled = false; return; }
   if (copying) leaveCopy();
+  if (!editing) {
+    const made = (await res.json().catch(() => ({}))).generated || {};
+    const lines = Object.entries(made).map(([k, v]) => `${k}: ${v}`);
+    generated = lines.length ? `Made up for you (shown once, write it down): ${lines.join(", ")}` : "";
+  }
   installId = req.id;
   seenInstalling[req.id] = true;
   showProgress(editing ? "Applying your changes…" : `Setting up ${req.display_name || req.id}…`);
   await loadGames();
 });
 
+let generated = "";
 function showProgress(title) {
+  $("progress-generated").textContent = generated;
+  $("progress-generated").hidden = !generated;
+  generated = "";
   form.hidden = true;
   $("progress").hidden = false;
   $("progress-title").textContent = title;

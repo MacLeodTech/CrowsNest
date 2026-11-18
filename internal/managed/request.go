@@ -1,6 +1,7 @@
 package managed
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -197,6 +198,46 @@ func (m *Manager) withCopy(r Request) (Request, error) {
 	return r, nil
 }
 
+// withSecrets fills each required secret the request leaves empty (a new game only) with next(), so that
+// "Enable" with nothing typed still gives a working server. It returns the request and the secrets it made.
+func (m *Manager) withSecrets(r Request, next func() string) (Request, map[string]string) {
+	mf, ok := m.Modules.Manifest(r.Module)
+	if !ok {
+		return r, nil
+	}
+	var made map[string]string
+	for _, o := range mf.Options {
+		if !o.Secret || !(o.Generate || o.Required || o.ManagedRequired) || r.Secrets[o.Key] != "" {
+			continue
+		}
+		if made == nil {
+			made = map[string]string{}
+			secrets := make(map[string]string, len(r.Secrets)+1)
+			for k, v := range r.Secrets {
+				secrets[k] = v
+			}
+			r.Secrets = secrets
+		}
+		v := next()
+		r.Secrets[o.Key], made[o.Key] = v, v
+		r.Generated = append(r.Generated, o.Key)
+	}
+	return r, made
+}
+
+// randomSecret is 16 letters and digits (safe in any game's settings file, and over the 5 characters Valheim wants).
+func randomSecret() string {
+	const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	for i := range b {
+		b[i] = chars[int(b[i])%len(chars)]
+	}
+	return string(b)
+}
+
 // withDefaults gives a new game its own data folder, named after its id, directly under games_root (which
 // the operator points at a folder that holds only game data). Two games from one module must never share a
 // folder (they would write the same world). A folder typed in the form is kept.
@@ -354,6 +395,7 @@ func (m *Manager) Preview(r Request) (*Plan, error) {
 		return nil, err
 	}
 	r = m.withDefaults(r)
+	r, _ = m.withSecrets(r, func() string { return "placeholder" })
 	g, mf, err := m.validate(r, false)
 	if err != nil {
 		return nil, err

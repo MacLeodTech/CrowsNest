@@ -122,6 +122,9 @@ type Request struct {
 	// CopyFrom names an enabled game of the same module whose secrets fill any this request leaves out, so a
 	// profile made from it needs no retyping of join passwords. Only the dashboard sends it; it is never stored.
 	CopyFrom string `json:"copy_from,omitempty"`
+	// Generated names the secrets the panel made up (not typed by the admin); the card shows their values, which
+	// stay in secrets.json. Typing a value for one in the edit form takes it off the list.
+	Generated []string `json:"generated,omitempty"`
 
 	probe bool // set by the catalogue's fit check: judge the policy only
 }
@@ -137,6 +140,9 @@ type Info struct {
 	ConnectAddress string            `json:"connect_address,omitempty"` // only what was typed in the form
 	Connect        string            `json:"connect,omitempty"`         // what players use: typed, or worked out from the published port
 	Options        map[string]string `json:"options,omitempty"`
+	// Generated holds the secrets the panel made up for this game (never ones the admin typed), so the card can
+	// show them. The list is for admins only.
+	Generated map[string]string `json:"generated,omitempty"`
 	// Image is the tag the game follows (repo:tag); Digest is the exact image it
 	// runs (empty for a game installed before pinning, until its next update);
 	// PreviousDigest is what Rollback goes back to.

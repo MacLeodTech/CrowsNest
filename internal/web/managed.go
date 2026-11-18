@@ -17,7 +17,7 @@ type ManagedGames interface {
 	Catalogue() []managed.ModuleInfo
 	List() []managed.Info
 	Preview(managed.Request) (*managed.Plan, error)
-	Enable(managed.Request) error
+	EnableGenerated(managed.Request) (map[string]string, error)
 	Update(managed.Request) error
 	Refresh(id string) error
 	Rollback(id string) error
@@ -139,7 +139,8 @@ func (a *App) handleManagedEnable(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := a.Managed.Enable(req); err != nil {
+	made, err := a.Managed.EnableGenerated(req)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -149,7 +150,7 @@ func (a *App) handleManagedEnable(w http.ResponseWriter, r *http.Request) {
 	}
 	a.record(r, req.ID, detail)
 	a.pokeGame(req.ID) // re-observe; an id the hub lacks prompts a registry reconcile
-	writeJSON(w, http.StatusAccepted, map[string]string{"id": req.ID, "state": managed.StateInstalling})
+	writeJSON(w, http.StatusAccepted, map[string]any{"id": req.ID, "state": managed.StateInstalling, "generated": made})
 }
 
 // handleManagedDisable removes a stopped game. An optional JSON body can also

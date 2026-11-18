@@ -103,8 +103,8 @@ files:
 
 options:
   - {key: server_name, label: Server name, default: My Windrose Server}
-  - {key: server_password, label: Server password, secret: true}
-  - {key: invite_code, label: Invite code, secret: true}
+  - {key: server_password, label: Server password, secret: true, generate: true}
+  - {key: invite_code, label: Invite code, secret: true, generate: true}
   - {key: max_players, label: Max players, default: "4"}
   - {key: lan_network, label: "LAN (macvlan) network the server joins", default: dockervlan}
   - {key: lan_ipv4, label: "Fixed LAN address (also the address players' relay sees)"}

@@ -1483,3 +1483,36 @@ func TestRefreshRetriesAFailedInstall(t *testing.T) {
 		}
 	}
 }
+
+// A required secret left empty is made up, listed for the card, and stops being "generated" once typed.
+func TestEmptyRequiredSecretIsGenerated(t *testing.T) {
+	m, _ := newManager(t)
+	made, err := m.EnableGenerated(Request{ID: "gs-valheim", Module: "valheim", Options: map[string]string{"ports": "27100:2456/udp,27101:2457/udp"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw := made["server_pass"]
+	if len(pw) < 12 {
+		t.Fatalf("generated = %v, want a random server_pass", made)
+	}
+	waitState(t, m, "gs-valheim", StateReady)
+	var got map[string]string
+	for _, in := range m.List() {
+		if in.ID == "gs-valheim" {
+			got = in.Generated
+		}
+	}
+	if got["server_pass"] != pw {
+		t.Fatalf("listed generated = %v, want %q", got, pw)
+	}
+	if err := m.Update(Request{ID: "gs-valheim", Module: "valheim", Options: map[string]string{"ports": "27100:2456/udp,27101:2457/udp"},
+		Secrets: map[string]string{"server_pass": "mine-own-1"}}); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, m, "gs-valheim", StateReady)
+	for _, in := range m.List() {
+		if in.ID == "gs-valheim" && len(in.Generated) != 0 {
+			t.Errorf("after typing one, generated = %v, want none", in.Generated)
+		}
+	}
+}

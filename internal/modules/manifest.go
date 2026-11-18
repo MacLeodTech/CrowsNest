@@ -171,6 +171,9 @@ type Option struct {
 	// ManagedRequired makes the option required for games enabled from the dashboard only
 	// (a config.yaml game wires the same thing by hand, so it may leave it out).
 	ManagedRequired bool `yaml:"managed_required"`
+	// Generate makes a secret option get a random value when a game is enabled from the dashboard with it
+	// left empty, so a new server works with nothing typed. The value is shown on the game's card.
+	Generate bool `yaml:"generate"`
 }
 
 // StartupStep maps a log pattern to a startup progress percentage.
