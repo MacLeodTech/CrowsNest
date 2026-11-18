@@ -45,7 +45,7 @@ files:
 options:
   - {key: server_name, label: Server name, default: My Valheim Server}
   - {key: world_name, label: World name, default: Midgard}
-  - {key: server_pass, label: Join password (5+ characters), secret: true}
+  - {key: server_pass, label: Join password (5+ characters), secret: true, generate: true}
   - {key: server_public, label: List in the server browser, default: "false"}
   - {key: backups_max_age, label: Days of automatic world backups to keep, default: "3"}
 

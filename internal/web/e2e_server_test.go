@@ -100,11 +100,11 @@ func (f *e2eManaged) List() []managed.Info {
 func (f *e2eManaged) Preview(r managed.Request) (*managed.Plan, error) {
 	return &managed.Plan{Service: r.ID, Scope: r.ID, Fits: true, Container: r.ID, Image: "example/demo:latest", Connect: "host:1234"}, nil
 }
-func (f *e2eManaged) Enable(r managed.Request) error {
+func (f *e2eManaged) EnableGenerated(r managed.Request) (map[string]string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.list = append(f.list, managed.Info{ID: r.ID, Module: r.Module, State: "ready", DisplayName: r.DisplayName})
-	return nil
+	return nil, nil
 }
 func (f *e2eManaged) Update(managed.Request) error                 { return nil }
 func (f *e2eManaged) Refresh(string) error                         { return nil }

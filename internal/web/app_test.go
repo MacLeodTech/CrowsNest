@@ -1254,7 +1254,10 @@ func (f *fakeManaged) List() []managed.Info { return nil }
 func (f *fakeManaged) Preview(managed.Request) (*managed.Plan, error) {
 	return &managed.Plan{Fits: true}, nil
 }
-func (f *fakeManaged) Enable(r managed.Request) error { f.enabled = append(f.enabled, r); return nil }
+func (f *fakeManaged) EnableGenerated(r managed.Request) (map[string]string, error) {
+	f.enabled = append(f.enabled, r)
+	return nil, nil
+}
 func (f *fakeManaged) Disable(id string, o managed.DisableOptions) error {
 	f.disabled = append(f.disabled, fmt.Sprintf("%s data=%v backups=%v", id, o.Data, o.Backups))
 	return nil

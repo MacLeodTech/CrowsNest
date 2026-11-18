@@ -70,7 +70,7 @@ options:
   - {key: manual_settings, label: "Edit the settings file by hand: true or false. Turn on only after the game has started once; the form options below then stop applying to the file", default: "false"}
   - {key: max_players, label: Max players, default: "8"}
   - {key: server_name, label: Server name, default: CrowsNest Palworld}
-  - {key: server_password, label: Join password, secret: true}
+  - {key: server_password, label: Join password, secret: true, generate: true}
   - {key: admin_password, label: Admin / REST password, secret: true, managed_required: true}
   - {key: rest_api_url, label: REST API base URL, required: true, derive: "http://{id}:8212"}
   - {key: rest_api_user, label: REST API user, default: admin}

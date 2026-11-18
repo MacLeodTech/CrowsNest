@@ -32,6 +32,14 @@ func (m *Manager) List() []Info {
 		in := Info{ID: e.ID, Module: e.Module, State: e.State, Error: e.Error,
 			DisplayName: e.DisplayName, ConnectAddress: e.ConnectAddress, Connect: connect, Options: opts,
 			Image: e.Image, Digest: e.Digest, PreviousDigest: e.PreviousDigest, Refresh: e.refresh}
+		for _, k := range e.Generated {
+			if v := e.Secrets[k]; v != "" {
+				if in.Generated == nil {
+					in.Generated = map[string]string{}
+				}
+				in.Generated[k] = v
+			}
+		}
 		if in.Image == "" && e.rendered != nil {
 			in.Image = e.rendered.Ref()
 		}

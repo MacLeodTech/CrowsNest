@@ -26,29 +26,37 @@ type installMode struct{ recreate, pull bool }
 // container, then it joins the dashboard. It returns once the request is
 // accepted; List shows the progress.
 func (m *Manager) Enable(r Request) error {
+	_, err := m.EnableGenerated(r)
+	return err
+}
+
+// EnableGenerated is Enable, and also returns the secrets it made up for required ones the request left empty
+// (the only time they can be shown), keyed by option.
+func (m *Manager) EnableGenerated(r Request) (map[string]string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	r, err := m.withCopy(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	r = m.withDefaults(r)
+	r, made := m.withSecrets(r, randomSecret)
 	g, mf, err := m.validate(r, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rd, err := m.renderAndFit(g, mf)
 	if err != nil {
-		return fmt.Errorf("outside the operator's policy (add it to policy.yaml to allow it): %w", err)
+		return nil, fmt.Errorf("outside the operator's policy (add it to policy.yaml to allow it): %w", err)
 	}
 	e := &entry{Request: r, State: StateInstalling, rendered: rd}
 	m.entries = append(m.entries, e)
 	if err := m.save(); err != nil {
 		m.entries = m.entries[:len(m.entries)-1]
-		return err
+		return nil, err
 	}
 	go m.install(e, g, installMode{})
-	return nil
+	return made, nil
 }
 
 func (m *Manager) install(e *entry, g config.GameConfig, mode installMode) {
@@ -368,6 +376,13 @@ func (m *Manager) reinstall(r Request, op reinstallOp) error {
 		for k, v := range e.Secrets {
 			next.Secrets[k] = v
 		}
+		var kept []string
+		for _, k := range e.Generated {
+			if r.Secrets[k] == "" {
+				kept = append(kept, k)
+			}
+		}
+		next.Generated = kept
 		for k, v := range r.Secrets {
 			if v != "" {
 				next.Secrets[k] = v

@@ -13,6 +13,15 @@ left empty so it follows the new id, and its ports move to the next free ones th
 copied by the server and never shown**: leave a password field empty to keep the original's, or type a new one.
 Games still start one at a time unless you raised "Servers allowed at once" and the memory budget allows it.
 
+## Enable with the defaults
+
+Every setting has a default, so choosing a game and pressing **Enable** gives a working server. The form shows
+passwords and codes first (for Windrose the invite code and server password, for Valheim the join password), then
+anything else the game must be told; everything else is under **More settings**. A password or code left empty is
+made up at random (16 letters and digits), and the game's card on the Games page lists it (admins only), so you can
+pass it on. Typing your own value in the edit form replaces it and takes it off the card. The exception is a setting
+that depends on your network, such as Windrose's fixed addresses: those have no safe default.
+
 ## Installing a module from a source
 
 If `managed.trusted_keys` lists at least one publisher key in `config.yaml` (and `modules_dir` is set and writable by

@@ -61,7 +61,8 @@ type OptionInfo struct {
 	Default  string `json:"default,omitempty"`
 	Required bool   `json:"required,omitempty"`
 	Secret   bool   `json:"secret,omitempty"`
-	Auto     bool   `json:"auto,omitempty"` // filled in from the game itself when left empty
+	Auto     bool   `json:"auto,omitempty"`     // filled in from the game itself when left empty
+	Generate bool   `json:"generate,omitempty"` // a random value is made when left empty
 }
 
 // PortNote is one published port and the module's reason for it.
@@ -102,7 +103,7 @@ func (m *Manager) Catalogue() []ModuleInfo {
 			mi.ConnectHint = fmt.Sprintf("%s:%d", m.Platform.HostIP, mf.Runtime.Ports[0].Port)
 		}
 		for _, o := range mf.Options {
-			mi.Options = append(mi.Options, OptionInfo{Key: o.Key, Label: o.Label, Default: o.Default, Required: (o.Required || o.ManagedRequired) && o.Derive == "", Secret: o.Secret, Auto: o.Derive != ""})
+			mi.Options = append(mi.Options, OptionInfo{Key: o.Key, Label: o.Label, Default: o.Default, Required: (o.Required || o.ManagedRequired) && o.Derive == "", Secret: o.Secret, Auto: o.Derive != "", Generate: o.Secret && (o.Generate || o.Required || o.ManagedRequired)})
 		}
 		if mi.Gated && !mi.Allowed {
 			no := false

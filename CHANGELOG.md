@@ -4,6 +4,14 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## Enable with the defaults (2026-11-17)
+
+- [x] **Add form: secrets first, random secrets by default.** Passwords and codes sit at the top of the form
+  (Windrose's invite code and server password, Valheim's join password), the rest under "More settings". A secret
+  left empty gets a random value (`generate: true` in a module's option, or any required secret) and the game's card
+  lists it for admins, so Enable then Start works with nothing typed. Typing a value in the edit form takes it off
+  the card. The enable response carries `generated`; the Games list carries it per game.
+
 ## Crash-looping shown on the dashboard card
 
 - [x] **Windrose world settings as a form (done 2026-11-17).** `WorldDescription.json` opens in the Files tab as a
