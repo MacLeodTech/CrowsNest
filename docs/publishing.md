@@ -21,6 +21,10 @@ scans, pushes and signs the image, then creates a GitHub Release.
 Tags on every release: `:X.Y.Z`, `:X.Y`, `:latest`, `:sha-<short>`, and `:dev`
 (every push to `main`).
 
+The release number is also compiled into the binary: `docker run --rm ghcr.io/<owner>/crowsnest:latest version`
+prints it, and the startup log says which version is running. A local `docker build` reports `dev`; pass
+`--build-arg VERSION=1.2.3` to set one.
+
 ## Running a released image
 
 Point your compose file at

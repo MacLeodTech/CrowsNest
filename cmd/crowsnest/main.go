@@ -58,6 +58,8 @@ func main() {
 	}
 
 	switch cmd {
+	case "version", "--version", "-v":
+		fmt.Println("crowsnest " + versionString())
 	case "serve":
 		if err := serve(); err != nil {
 			log.Fatal(err)
@@ -665,7 +667,7 @@ func serve() error {
 
 	serveErr := make(chan error, 1)
 	go func() {
-		log.Printf("crowsnest listening on %s", cfg.Server.Addr)
+		log.Printf("crowsnest %s listening on %s", versionString(), cfg.Server.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			serveErr <- err
 			return
