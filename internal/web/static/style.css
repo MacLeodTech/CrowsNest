@@ -466,6 +466,22 @@ h1, h2, h3, p { margin: 0; }
 .playtime td { padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
 .playtime td:last-child { text-align: right; font-family: var(--mono); color: var(--muted); }
 
+/* ---------- play stats ---------- */
+.stats { margin-top: 1.5rem; }
+.stats-range { display: flex; gap: 0.4rem; margin: 0.5rem 0 0.8rem; }
+.stats-range button { font: 0.75rem var(--mono); padding: 0.25rem 0.7rem; border: 1px solid var(--border); border-radius: 4px; background: none; color: var(--muted); cursor: pointer; }
+.stats-range button[aria-pressed="true"] { color: var(--text, inherit); border-color: var(--muted); }
+.stat-game { padding: 0.8rem 0; border-bottom: 1px solid var(--border); }
+.stat-game h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.stat-nums { display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; }
+.stat-nums div { display: flex; flex-direction: column; }
+.stat-nums b { font: 600 1.1rem var(--mono); }
+.stat-nums span { font: 0.7rem var(--mono); color: var(--muted); }
+.stat-nums .bad b { color: var(--danger); }
+.stat-bars { display: flex; align-items: flex-end; gap: 2px; height: 3rem; margin: 0.7rem 0 0.4rem; }
+.stat-bars i { flex: 1; min-width: 2px; background: var(--vessel, var(--muted)); opacity: 0.8; border-radius: 1px 1px 0 0; }
+.stat-top { margin: 0; font: 0.75rem var(--mono); color: var(--muted); }
+
 /* ---------- host health ---------- */
 .host { display: flex; flex-wrap: wrap; gap: 0.6rem 1.6rem; margin: 1rem 0 0; font: 0.75rem var(--mono); color: var(--muted); }
 .host[hidden] { display: none; }

@@ -70,8 +70,6 @@ The review and its fixes are in `CHANGELOG.md` and the findings table is in `doc
 
 ### Features to consider
 
-- [ ] **Per-game play history and stats page:** hours played, peak players and crashes, from the data `history` and
-  `playerwatch` already collect.
 - [ ] **`files:` entries for the Source, Don't Starve Together and 7 Days to Die modules.** Parked by the owner on
   2026-11-17. The modules live in the modules repository; confirm each config path against the real image first. Also
   a stopped-game edit for games set up in `config.yaml` (low value).

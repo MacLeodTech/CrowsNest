@@ -68,7 +68,7 @@ loaders.schedule = async () => {
     row.dataset.id = e.id;
     const game = el("select", { name: "game" }, ...games.map((g) => el("option", { value: g.id, textContent: g.name || g.id })));
     game.value = e.game;
-    const action = el("select", { name: "action" }, el("option", { value: "start", textContent: "Start" }), el("option", { value: "stop", textContent: "Stop" }));
+    const action = el("select", { name: "action" }, el("option", { value: "start", textContent: "Start" }), el("option", { value: "stop", textContent: "Stop" }), el("option", { value: "backup", textContent: "Back up" }));
     action.value = e.action;
     const time = el("input", { type: "time", name: "time", value: e.time, required: true });
     const days = el("span", { className: "schedule-days" });
@@ -830,7 +830,8 @@ loaders.backups = async () => {
   const h = v.health;
   const problem = $("backups-problem");
   const off = v.offsite && v.offsite.configured && v.offsite.state !== "ok" ? v.offsite.message || "The offsite copy is failing." : "";
-  const text = [...((h && h.problems) || []), off].filter(Boolean).join(" ");
+  const damaged = ((h && h.damaged) || []).map((d) => `The newest backup of ${d.game} (${d.file}) cannot be read back: ${d.error}. Take a new one.`);
+  const text = [...((h && h.problems) || []), ...damaged, off].filter(Boolean).join(" ");
   problem.textContent = text;
   problem.hidden = !text;
   $("backups-folder").textContent = h ? `Shared folder: ${h.ok ? "healthy" : "has problems"}, ${mb(h.free)} free.` : "No shared backups folder is set up; each game keeps its own.";

@@ -48,6 +48,24 @@ func (a *App) handleActivity(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handlePlayStats adds up each visible game's activity over the last 7, 30 or 90 days (?days=): time aboard, visits,
+// players, peak, crashes, time aboard per day and the top players.
+func (a *App) handlePlayStats(w http.ResponseWriter, r *http.Request) {
+	days := 30
+	if n, err := strconv.Atoi(r.URL.Query().Get("days")); err == nil && n >= 1 {
+		days = min(n, 365)
+	}
+	loc := time.UTC
+	if l, err := time.LoadLocation(a.TimeZone); err == nil && a.TimeZone != "" {
+		loc = l
+	}
+	stats := a.History.Stats(days, loc, func(id string) bool { return a.canSee(r, id) })
+	if stats == nil {
+		stats = []history.GameStats{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"days": days, "games": stats})
+}
+
 // visiblePlaytime is the playtime totals for the games r's user may see.
 func (a *App) visiblePlaytime(r *http.Request) []history.Playtime {
 	all := a.History.Playtime()
