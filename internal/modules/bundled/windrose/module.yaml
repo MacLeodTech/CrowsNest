@@ -27,6 +27,7 @@ connect:
 
 runtime:
   ram: 8g                # typical use; admission swaps in the measured peak after a run
+  memory: 12g               # hard limit; Wine can balloon; cap it so it kills Windrose, not the host. Needed under a policy max_memory
   image: indifferentbroccoli/windrose-server-docker
   stop_grace: 30s
   data_dir: Windrose

@@ -12,6 +12,7 @@ connect:
 
 runtime:
   ram: 3g                # typical use; admission swaps in the measured peak after a run
+  memory: 6g               # hard limit; a leak kills Valheim, not the host. Needed under a policy max_memory
   image: lloesche/valheim-server
   stop_grace: 2m            # saves the world on SIGTERM
   data_dir: Valheim
