@@ -13,6 +13,7 @@ import (
 	"github.com/macleodtech/crowsnest/internal/dockerctl"
 	"github.com/macleodtech/crowsnest/internal/dockerguard"
 	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/logging"
 )
 
 // install is idempotent: it can be re-run for a half-installed game.
@@ -64,7 +65,7 @@ func (m *Manager) install(e *entry, g config.GameConfig, mode installMode) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if err != nil {
-		log.Printf("managed: installing %s failed: %v", e.ID, err)
+		log.Printf("managed: installing %s failed: %s", logging.Clean(e.ID), logging.Clean(err.Error()))
 		e.State, e.Error = StateFailed, err.Error()
 	} else {
 		e.State, e.Error = StateReady, ""
@@ -115,7 +116,7 @@ func (m *Manager) doInstall(e *entry, g config.GameConfig, mode installMode) err
 		// The guard reloads on its own schedule; until it has our scope it answers 403.
 		err := m.retryDenied(ctx, func() error { return m.Docker.Pull(ctx, image) })
 		if err != nil && tolerant && !dockerctl.IsDenied(err) {
-			log.Printf("managed: pull %s failed, using the local image: %v", image, err)
+			log.Printf("managed: pull %s failed, using the local image: %s", logging.Clean(image), logging.Clean(err.Error()))
 			return nil
 		}
 		if err != nil {
@@ -138,14 +139,14 @@ func (m *Manager) doInstall(e *entry, g config.GameConfig, mode installMode) err
 			if exists {
 				// The old container was never touched: keep the game on the dashboard as it was.
 				if rerr := m.register(e, g); rerr != nil {
-					log.Printf("managed: %s: %v", e.ID, rerr)
+					log.Printf("managed: %s: %s", logging.Clean(e.ID), logging.Clean(rerr.Error()))
 				}
 			}
 			return err
 		}
 		d, derr := m.digestOf(ctx, ref, repo)
 		if derr != nil {
-			log.Printf("managed: %s: no digest to pin, running the tag: %v", e.ID, derr)
+			log.Printf("managed: %s: no digest to pin, running the tag: %s", logging.Clean(e.ID), logging.Clean(derr.Error()))
 		}
 		next = pin{Image: ref, Digest: d, PreviousDigest: cur.PreviousDigest}
 		if cur.Image != "" && !sameRepo(cur.Image, repo) {

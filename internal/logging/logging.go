@@ -43,14 +43,18 @@ func Setup(w io.Writer, level, format string) error {
 	return nil
 }
 
-// oneLine keeps a logged value from forging extra log lines.
-var oneLine = strings.NewReplacer("\n", " ", "\r", " ")
+// Clean keeps a logged value from forging extra log lines: line breaks become spaces. Wrap every value that came
+// from a user, a config file or an error that echoes one when it goes into log.Printf.
+func Clean(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	return strings.ReplaceAll(s, "\r", " ")
+}
 
 // bridge takes lines from the standard log package.
 type bridge struct{}
 
 func (bridge) Write(p []byte) (int, error) {
-	msg := oneLine.Replace(strings.TrimRight(string(p), "\n"))
+	msg := Clean(strings.TrimRight(string(p), "\n"))
 	slog.Log(context.Background(), levelOf(msg), msg)
 	return len(p), nil
 }

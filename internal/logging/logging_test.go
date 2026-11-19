@@ -30,3 +30,9 @@ func TestBadSettingsAreRefused(t *testing.T) {
 		t.Error("accepted a bad level or format")
 	}
 }
+
+func TestCleanStripsLineBreaks(t *testing.T) {
+	if got := Clean("a\nb\r\nc"); got != "a b  c" {
+		t.Fatalf("Clean = %q", got)
+	}
+}

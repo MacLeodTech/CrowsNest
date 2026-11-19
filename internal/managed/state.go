@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/logging"
 	"github.com/macleodtech/crowsnest/internal/vault"
 	"log"
 	"os"
@@ -208,7 +209,7 @@ func (m *Manager) Restore(ctx context.Context) error {
 			e.rendered.Pin(e.Digest)
 		}
 		if err != nil {
-			log.Printf("managed: %s no longer renders: %v", req.ID, err)
+			log.Printf("managed: %s no longer renders: %s", logging.Clean(req.ID), logging.Clean(err.Error()))
 			e.State, e.Error = StateFailed, err.Error()
 			m.entries = append(m.entries, e)
 			continue

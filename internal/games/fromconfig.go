@@ -6,6 +6,7 @@ import (
 
 	"github.com/macleodtech/crowsnest/internal/config"
 	"github.com/macleodtech/crowsnest/internal/dockerctl"
+	"github.com/macleodtech/crowsnest/internal/logging"
 )
 
 // FromConfig builds one GameDef per configured game, wired with the Phase 3
@@ -55,7 +56,7 @@ func connectSecrets(g config.GameConfig) []ConnectSecret {
 	for _, s := range g.ConnectSecrets {
 		v := os.Getenv(s.Env)
 		if v == "" {
-			log.Printf("games: %s: %s is unset or empty; %q not shown on the card", g.ID, s.Env, s.Label)
+			log.Printf("games: %s: %s is unset or empty; %q not shown on the card", logging.Clean(g.ID), logging.Clean(s.Env), s.Label)
 			continue
 		}
 		out = append(out, ConnectSecret{Label: s.Label, Value: v})
