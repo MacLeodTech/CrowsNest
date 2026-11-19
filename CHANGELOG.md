@@ -35,6 +35,8 @@ Newest first within each part. Design detail for the modular-games rework is in
   7, 30 or 90 days, time aboard, visits, players, peak, crashes, a bar per day and the top players, for the games the
   user may see. Also fixed: a file-edit entry in the logbook threw an error instead of showing.
 - **Settings, Backups names a damaged newest backup.**
+- **Valheim and Windrose now have a memory limit** (6g and 12g, like Palworld's 10g). Without one, a policy
+  `max_memory` ceiling refuses to create them.
 - **Scheduled backups.** A schedule entry can now be "Back up" as well as start or stop, so a game that stays up for
   weeks is backed up on the days and time you pick (it was only backed up on stop or by hand). A game that is down or
   already being backed up is skipped quietly; a real failure is announced.
