@@ -64,6 +64,7 @@ type Manager struct {
 	running map[string]bool
 	wg      sync.WaitGroup
 	health  healthState
+	verify  verifyCache
 }
 
 // Wait blocks until background backups finish (tests, shutdown).

@@ -15,6 +15,7 @@ import (
 	"github.com/macleodtech/crowsnest/internal/config"
 	"github.com/macleodtech/crowsnest/internal/dockerctl"
 	"github.com/macleodtech/crowsnest/internal/games"
+	"github.com/macleodtech/crowsnest/internal/probes"
 )
 
 type fakeRunner struct{}
@@ -157,5 +158,46 @@ func TestPolicyDefaults(t *testing.T) {
 	}
 	if d := PolicyDefaults(Platform{Network: "mine"}); d.Network != "mine" {
 		t.Errorf("configured network ignored: %q", d.Network)
+	}
+}
+
+func TestModulesCannotReadThePanelsOwnSecrets(t *testing.T) {
+	t.Setenv("CROWSNEST_MASTER_KEY", "master")
+	t.Setenv("MY_DISCORD_HOOK", "https://discord.com/api/webhooks/1/x")
+	t.Setenv("WINDROSE_RCON_PASSWORD", "game-secret")
+	cfg := &config.Config{}
+	cfg.Server.MetricsTokenEnv = "MY_METRICS"
+	cfg.Notifications = &config.NotificationsConfig{DiscordWebhookURLEnv: "MY_DISCORD_HOOK"}
+	reservePanelEnv(cfg)
+	e := Env{}
+	for _, name := range []string{"CROWSNEST_MASTER_KEY", "CROWSNEST_ANYTHING", "GUARD_SCOPES", "MY_DISCORD_HOOK"} {
+		if got := e.Secret(name); got != "" {
+			t.Errorf("a module read %s", name)
+		}
+	}
+	if got := e.Secret("WINDROSE_RCON_PASSWORD"); got != "game-secret" {
+		t.Errorf("a game's own variable = %q", got)
+	}
+	// a game set up from the dashboard has its own store, which is not the environment
+	if got := (Env{Lookup: func(string) string { return "stored" }}).Secret("CROWSNEST_X"); got != "stored" {
+		t.Errorf("store lookup = %q", got)
+	}
+}
+
+func TestReviewShowsWhatActionsAndPreStopSend(t *testing.T) {
+	m := &Manifest{ID: "x"}
+	m.Runtime.Image = "img"
+	m.Actions = []probes.Action{{ID: "kick", RCON: "kick {player}"}, {ID: "save", Request: probes.Request{Method: "POST", Path: "/save", Body: map[string]string{"b": "2", "a": "1"}}}}
+	m.PreStop = []probes.Step{{Request: probes.Request{Method: "POST", Path: "/shutdown"}}}
+	before := m.Review()
+	for _, want := range []string{`RCON command "kick {player}"`, "POST /save with a=1, b=2", "POST /shutdown"} {
+		if !strings.Contains(strings.Join(before, "|"), want) {
+			t.Errorf("review lacks %q: %v", want, before)
+		}
+	}
+	m.Actions[0].RCON = "ban {player}" // an update that swaps the command must show in the diff
+	added, removed := DiffLines(before, m.Review())
+	if len(added) != 1 || len(removed) != 1 || !strings.Contains(added[0], "ban {player}") {
+		t.Errorf("diff added %v removed %v", added, removed)
 	}
 }

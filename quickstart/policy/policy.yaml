@@ -8,6 +8,8 @@ games_root: /srv/games                  # game data may only be bound from insid
 host_ips: []
 exec: false                             # true lets games run the backup command declared in their module
 pin_digests: true                       # run images by digest so an upstream push changes nothing until you update
+# max_memory: 16g                      # optional: the most memory any one game may be given; the guard then requires every
+#                                       # create to carry a Memory limit at or under it (docs/modules.md)
 max_scopes: 64
 
 # Not listed, so these are the defaults:

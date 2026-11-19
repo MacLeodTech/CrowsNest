@@ -61,6 +61,13 @@ func runGuard(args []string) error {
 			s.Name, sortedKeys(s.Images), s.Binds, s.Volumes, sortedKeys(s.Networks), s.IPv4, s.Ports, s.Exec, sortedKeys(s.SecOpts), sortedKeys(s.CapAdd)) // #nosec G705 G706 -- operator configuration, not request data
 	}
 
+	allow, err := dockerguard.ParseAllowFrom(os.Getenv("GUARD_ALLOW_FROM"))
+	if err != nil {
+		return fmt.Errorf("crowsnest guard: refusing to start, GUARD_ALLOW_FROM: %w", err)
+	}
+	if len(allow) == 0 {
+		fmt.Fprintln(os.Stderr, "crowsnest guard: GUARD_ALLOW_FROM is not set, so any container on this network may use the guard; set it to the panel's address or subnet")
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	// With --exec the guard listens on loopback only, where nothing outside this container can reach it, and
@@ -91,7 +98,7 @@ func runGuard(args []string) error {
 		fmt.Printf("crowsnest guard watching %s inside policy %s (SIGHUP reloads at once)\n", src.ManagedFile, src.PolicyFile) // #nosec G705 G706 -- operator-supplied environment
 	}
 	if !*withExec {
-		return g.ServeContext(ctx, l)
+		return g.ServeContext(ctx, dockerguard.AllowFrom(l, allow, g.Logf))
 	}
 	execSrv, err := newExecProxy(ctx, *listen, "tcp://"+l.Addr().String())
 	if err != nil {
@@ -99,7 +106,7 @@ func runGuard(args []string) error {
 	}
 	errc := make(chan error, 2)
 	go func() { errc <- g.ServeContext(ctx, l) }()
-	go func() { errc <- serveUntilDone(ctx, execSrv) }()
+	go func() { errc <- serveUntilDoneFrom(ctx, execSrv, allow) }()
 	err = <-errc
 	stop() // one side ending takes the other down with it
 	<-errc

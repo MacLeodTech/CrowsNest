@@ -152,6 +152,18 @@ func TestRestoreSurvivesAMissingModule(t *testing.T) {
 	if b, err := os.ReadFile(m2.path("scopes.json")); err != nil || strings.Contains(string(b), "minecraft") {
 		t.Errorf("scopes.json = %q, %v; want no scope for a game with no module", b, err)
 	}
+	if n := m2.Recover(); n != 0 {
+		t.Errorf("Recover brought back %d games while the module is still missing", n)
+	}
+	// the module is installed again: the game comes back without a restart
+	m2.Modules = m.Modules
+	if n := m2.Recover(); n != 1 {
+		t.Fatalf("Recover brought back %d games, want 1", n)
+	}
+	waitState(t, m2, "minecraft", StateReady)
+	if _, ok := m2.Registry.Get("minecraft"); !ok {
+		t.Error("the recovered game is not on the dashboard")
+	}
 }
 
 func TestEnableAndDisable(t *testing.T) {
@@ -956,6 +968,11 @@ func TestPolicyEditsNeverWiden(t *testing.T) {
 		"labels":     func(d *PolicyDoc) { d.Labels = append(slices.Clone(d.Labels), "x=y") },
 		"exec":       func(d *PolicyDoc) { d.Exec = true },
 		"max_scopes": func(d *PolicyDoc) { d.MaxScopes = 1000 },
+		// patterns that match more than the current ones never get in
+		"names any":                     func(d *PolicyDoc) { d.Names = []string{"*"} },
+		"names broader glob":            func(d *PolicyDoc) { d.Names = []string{"g*", "minecraft"} },
+		"names wider than an exact one": func(d *PolicyDoc) { d.Names = []string{"minecraft*"} },
+		"images any":                    func(d *PolicyDoc) { d.Images = []string{"*"} },
 	}
 	for name, f := range widen {
 		d := base
@@ -1514,5 +1531,55 @@ func TestEmptyRequiredSecretIsGenerated(t *testing.T) {
 		if in.ID == "gs-valheim" && len(in.Generated) != 0 {
 			t.Errorf("after typing one, generated = %v, want none", in.Generated)
 		}
+	}
+}
+
+// max_memory is the operator's: the dashboard shows it, cannot change it, and a save keeps it.
+func TestPolicySaveKeepsMaxMemory(t *testing.T) {
+	m, _ := newManager(t)
+	m.PolicyEditable = true
+	raw, err := os.ReadFile(m.PolicyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(m.PolicyFile, append(raw, []byte("max_memory: 16g\n")...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st, err := m.Policy()
+	if err != nil || st.Policy.MaxMemory != "16g" {
+		t.Fatalf("policy view: %+v %v", st.Policy, err)
+	}
+	d := st.Policy
+	d.MaxMemory = "1t" // an attempt to raise it
+	if err := m.SetPolicy(d); err != nil {
+		t.Fatal(err)
+	}
+	if kept, _ := m.Policy(); kept.Policy.MaxMemory != "16g" {
+		t.Errorf("max_memory after a save = %q, want 16g", kept.Policy.MaxMemory)
+	}
+	d.MaxMemory = ""
+	if err := m.SetPolicy(d); err != nil {
+		t.Fatal(err)
+	}
+	if kept, _ := m.Policy(); kept.Policy.MaxMemory != "16g" {
+		t.Errorf("a save without max_memory removed it: %q", kept.Policy.MaxMemory)
+	}
+}
+
+func TestPolicyNamesMayNarrowToASubPattern(t *testing.T) {
+	m, _ := newManager(t)
+	m.PolicyEditable = true
+	st, _ := m.Policy()
+	d := st.Policy
+	d.Names = []string{"gs-a*", "gs-one", "minecraft"} // inside gs-* and minecraft
+	if err := m.SetPolicy(d); err != nil {
+		t.Fatalf("narrowing gs-* to gs-a* was refused: %v", err)
+	}
+	if kept, _ := m.Policy(); !slices.Equal(kept.Policy.Names, d.Names) {
+		t.Errorf("names after the save = %v", kept.Policy.Names)
+	}
+	d.Names = []string{"gs-*"} // back out is widening now
+	if err := m.SetPolicy(d); err == nil {
+		t.Error("widening gs-a* back to gs-* was saved")
 	}
 }

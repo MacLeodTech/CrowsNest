@@ -269,3 +269,44 @@ func ResealSecrets(path string, from, to *vault.Vault) (int, error) {
 	}
 	return n, writeJSON(path, secrets, 0o600)
 }
+
+// Recover tries again the games that failed to load because their module was missing or did not render (a module
+// installed or updated since, a policy edited), so they come back without restarting the panel. A game that fails
+// the same way stays failed with its message. It returns how many it brought back.
+func (m *Manager) Recover() int {
+	type todo struct {
+		e *entry
+		g config.GameConfig
+	}
+	var back []todo
+	m.mu.Lock()
+	for _, e := range m.entries {
+		if e.State != StateFailed || e.rendered != nil {
+			continue // an install that failed has its render; only a game that never rendered is retried here
+		}
+		g, mf, err := m.validate(e.Request, true)
+		if err == nil {
+			e.rendered, err = mf.Render(g, m.Platform)
+		}
+		if err != nil {
+			e.rendered, e.Error = nil, err.Error()
+			continue
+		}
+		if e.Digest != "" && e.Image == e.rendered.Ref() {
+			e.rendered.Pin(e.Digest)
+		}
+		e.State, e.Error = StateInstalling, ""
+		back = append(back, todo{e, g})
+	}
+	if len(back) > 0 {
+		if err := m.writeScopes(); err != nil {
+			log.Printf("managed: rewriting the guard scopes: %v", err)
+		}
+	}
+	m.mu.Unlock()
+	for _, t := range back {
+		log.Printf("managed: %s renders again; bringing it back", t.e.ID)
+		go m.install(t.e, t.g, installMode{})
+	}
+	return len(back)
+}

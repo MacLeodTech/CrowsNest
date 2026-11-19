@@ -25,12 +25,15 @@ var ErrLowSpace = errors.New("backup: the backups folder is almost full")
 
 // Health is the latest result of the periodic folder check.
 type Health struct {
-	Checked  bool      `json:"checked"`
-	OK       bool      `json:"ok"`
-	Problems []string  `json:"problems,omitempty"`
-	Free     uint64    `json:"free"`
-	Orphans  []string  `json:"orphans,omitempty"` // folders no game uses
-	At       time.Time `json:"at"`
+	Checked  bool     `json:"checked"`
+	OK       bool     `json:"ok"`
+	Problems []string `json:"problems,omitempty"`
+	Free     uint64   `json:"free"`
+	Orphans  []string `json:"orphans,omitempty"` // folders no game uses
+	// Damaged are newest archives that failed their read-through. They do not pause backups (the folder itself is
+	// fine), but they are announced: the copy that was meant to be the way back is not one.
+	Damaged []Damaged `json:"damaged,omitempty"`
+	At      time.Time `json:"at"`
 }
 
 type healthState struct {
@@ -129,6 +132,7 @@ func (m *Manager) CheckHealth(defs []games.GameDef) Health {
 		}
 		sort.Strings(h.Orphans)
 	}
+	h.Damaged = m.VerifyNewest(defs)
 	return h
 }
 
@@ -168,6 +172,22 @@ func (m *Manager) RunMonitor(ctx context.Context, interval time.Duration, defs f
 		prev := m.health.last
 		m.health.last = h
 		m.health.mu.Unlock()
+		if now, was := damagedKey(h.Damaged), damagedKey(prev.Damaged); now != was {
+			switch {
+			case now == "":
+				m.record("", "", "the newest backups read back fine again")
+				m.notify("✅ The newest backups all read back fine again.")
+			default:
+				var parts []string
+				for _, d := range h.Damaged {
+					parts = append(parts, fmt.Sprintf("%s: %s (%s)", d.Game, d.File, d.Error))
+				}
+				msg := "the newest backup cannot be read back: " + strings.Join(parts, "; ")
+				log.Printf("backup: %s", msg)
+				m.record("", "", msg)
+				m.notify("⚠️ **A backup is damaged.** " + msg + ". Take a new one before you rely on it.")
+			}
+		}
 		switch {
 		case !h.OK && (!prev.Checked || prev.OK || strings.Join(prev.Problems, ";") != strings.Join(h.Problems, ";")):
 			msg := "backups folder problem: " + strings.Join(h.Problems, "; ")
@@ -252,4 +272,13 @@ func permissionHint(msg, dir string) string {
 		return " (the game cannot write to its backup folder: chown it to the game's user, or set platform.backups_dir_mode to \"0777\"; folder: " + dir + ")"
 	}
 	return ""
+}
+
+func damagedKey(d []Damaged) string {
+	parts := make([]string, len(d))
+	for i, x := range d {
+		parts[i] = x.Game + "/" + x.File
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ";")
 }

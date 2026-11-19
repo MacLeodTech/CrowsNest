@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/probes"
 	"io"
 	"net/http"
 	"net/url"
@@ -266,13 +267,21 @@ func (m *Manifest) Review() []string {
 		add("restores a backup with a one-shot container of its image, with its data folders and backups folder, running  %s", strings.Join(m.Backup.Restore, " "))
 	}
 	for _, a := range m.Actions {
-		add("adds the admin action %q", a.ID)
+		// what the action sends is part of the line, so an update that changes the command shows in the diff
+		switch {
+		case a.RCON != "":
+			add("adds the admin action %q: RCON command %q", a.ID, a.RCON)
+		case a.Request.Path != "":
+			add("adds the admin action %q: %s", a.ID, describeRequest(a.Request))
+		default:
+			add("adds the admin action %q", a.ID)
+		}
 	}
 	for _, f := range m.Files {
 		add("lets admins read and overwrite %s inside the game's container (as %q)", f.Path, f.ID)
 	}
-	if len(m.PreStop) > 0 {
-		add("calls %d request(s) before it stops the game", len(m.PreStop))
+	for _, st := range m.PreStop {
+		add("before it stops the game: %s", describeRequest(st.Request))
 	}
 	if m.RCON.Addr != "" {
 		add("opens an RCON console at %s", m.RCON.Addr)
@@ -289,6 +298,28 @@ func (m *Manifest) Review() []string {
 		}
 	}
 	return out
+}
+
+// describeRequest is one request to the game's API as a line: method, path and the names and values of its body.
+func describeRequest(r probes.Request) string {
+	method := r.Method
+	if method == "" {
+		method = "GET"
+	}
+	line := method + " " + r.Path
+	if len(r.Body) > 0 {
+		keys := make([]string, 0, len(r.Body))
+		for k := range r.Body {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		parts := make([]string, len(keys))
+		for i, k := range keys {
+			parts[i] = k + "=" + r.Body[k]
+		}
+		line += " with " + strings.Join(parts, ", ")
+	}
+	return line
 }
 
 // CheckUpdate says whether body (parsed as m, signed by signedBy) may replace the installed module e. A module

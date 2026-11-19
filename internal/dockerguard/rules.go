@@ -466,10 +466,10 @@ func hostConfigRules(s *Scope) map[string]rule {
 		"SecurityOpt": securityOptsRule(s), "CapAdd": capAddRule(s),
 		// limits and behaviour that stay inside the container's own cgroup and namespaces
 		"RestartPolicy": objectRule(restartRules), "LogConfig": objectRule(logRules),
-		"Memory": intMin(0), "MemorySwap": intMin(-1), "MemoryReservation": intMin(0),
+		"Memory": memoryRule(s, 1, false), "MemorySwap": memoryRule(s, 2, true), "MemoryReservation": intMin(0),
 		"MemorySwappiness": intMin(-1, 100), "NanoCpus": intMin(0), "CpuShares": intMin(0), "CpuPeriod": intMin(0),
 		"CpuQuota": intMin(-1), "CpusetCpus": ruleStr, "CpusetMems": ruleStr, "BlkioWeight": intMin(0, 1000),
-		"PidsLimit": intMin(-1), "Ulimits": ulimitsRule, "Init": ruleBool, "ShmSize": intMin(0),
+		"PidsLimit": intMin(-1), "Ulimits": ulimitsRule, "Init": ruleBool, "ShmSize": shmRule(s),
 		"OomScoreAdj": intMin(0, 1000), // negative would protect the game at the expense of everything else
 		"ExtraHosts":  ruleStrings, "Dns": ruleStrings, "DnsOptions": ruleStrings, "DnsSearch": ruleStrings, "CapDrop": ruleStrings,
 		"ReadonlyRootfs": ruleBool, "Tmpfs": ruleStringMap,
@@ -488,6 +488,45 @@ func hostConfigRules(s *Scope) map[string]rule {
 		r[k] = ruleEmpty
 	}
 	return r
+}
+
+// memoryRule bounds a memory field by the scope's ceiling (the policy's max_memory) times mult. Without a ceiling
+// the field is as it always was: a number, -1 allowed where optional. With one, the field may not be left at the
+// engine's "no limit": a Memory limit is required (optional false), and MemorySwap may be unset but never -1.
+func memoryRule(s *Scope, mult int64, optional bool) rule {
+	base := intMin(0)
+	if optional {
+		base = intMin(-1)
+	}
+	return func(v any, name string) error {
+		if err := base(v, name); err != nil {
+			return err
+		}
+		if s.maxMemory == 0 {
+			return nil
+		}
+		n, _ := asInt(v)
+		switch {
+		case n == 0 && optional:
+			return nil // unset: the engine defaults it to twice Memory, which Memory's own limit bounds
+		case n <= 0, n > s.maxMemory*mult:
+			return deny(403, "%s must be between 1 and %d bytes for %s (the policy's max_memory)", name, s.maxMemory*mult, s.Name)
+		}
+		return nil
+	}
+}
+
+func shmRule(s *Scope) rule {
+	base := intMin(0)
+	return func(v any, name string) error {
+		if err := base(v, name); err != nil {
+			return err
+		}
+		if n, _ := asInt(v); s.maxMemory > 0 && n > s.maxMemory {
+			return deny(403, "%s is over %d bytes for %s (the policy's max_memory)", name, s.maxMemory, s.Name)
+		}
+		return nil
+	}
 }
 
 // ipamRules: compose sends these empty for "no fixed address". IPv4Address may

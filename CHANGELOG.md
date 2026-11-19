@@ -4,6 +4,61 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## STRIDE threat-model fixes (2026-11-19)
+
+- **The audit anchor is posted within 30 seconds of a user, sign-in or settings change**, not only at start and daily,
+  so an intruder has less time to cut their own change out of the log before a copy sits outside the panel.
+- **A dashboard policy edit can narrow a name pattern** (`gs-*` to `gs-a*`, or to a name the old entries match).
+  Other lists still compare exactly, and a pattern that matches more than the current ones is refused.
+- **The addresses exempt from the per-user login throttle survive a restart** (`known-addrs.json`, 0600, next to the
+  settings file), so a restart no longer reopens the lockout window for people who sign in from home.
+- **Request deadlines.** A POST, PUT or DELETE has 60 seconds to arrive in full and 5 minutes to be answered, so a
+  client that trickles a body cannot hold a connection. GET streams (logs, progress, events) are not limited.
+- **`crowsnest doctor` warns about a symlink in the games or backups folder that leads outside it**, the way a game with
+  write access could redirect a later bind. (The guard cannot check this itself: it does not see the host's folders.)
+- **Kept earlier versions of an edited file are encrypted** with the vault (bound to the game and file). Versions kept
+  before this stay readable as plain files until they age out of the last ten.
+- **The module install and update review shows what each admin action and pre-stop request sends**, so an update that
+  swaps an RCON command or a request body now appears in the diff instead of "nothing changed".
+- **A game that failed to load for a missing or broken module comes back** as soon as the module is installed or
+  updated from the dashboard, without restarting the panel.
+- **Backups are read back.** The newest archive of each game (`.tar.gz`, `.tgz`, `.tar`, `.zip`) is read end to end
+  once a minute, and only when it has changed (gzip and zip checksums, every tar header); a damaged one is recorded, shown in
+  the backups health and announced on the notice channels. It does not pause backups.
+- **"Ready to join" notice.** When a game that was seen starting comes online, the notice channels get a message
+  (`notifications.ready_notices: false` turns it off). A game found already online after a panel restart is not
+  announced.
+- **Monitoring examples** in `docs/examples/monitoring/`: a Prometheus scrape job, alert rules (crash loop, backups
+  folder, damaged backup, offsite copy, low disk and memory) and a Grafana dashboard. `/metrics` gained
+  `crowsnest_backups_damaged` and `crowsnest_backups_offsite_ok`.
+- **Modules can no longer read the panel's own secrets.** A module's `password_env` (api, rcon, players) naming a
+  `CROWSNEST_`/`GUARD_` variable, or one `config.yaml` uses for a webhook, metrics token or sign-in secret, is refused
+  at load and reads as empty at run time, so a module cannot aim a secret at its own API address. The rest of the
+  0.16.x re-review (`exclusivity`, `rcon`, `probes`, `offsite`, `passkey`, `mfa`, `vault`, OIDC token exchange)
+  found nothing else.
+
+A STRIDE review (guard, exec guard, sign-in, sessions, setup, OIDC validation, managed policy, `gamefiles`, `restore`,
+module fetch, dashboard JS). The findings table is in [`docs/threat-model.md`](docs/threat-model.md). Fixed:
+
+- [x] **Per-user lockout abuse (T1).** The per-username sign-in throttle no longer blocks an address that user signed
+  in from in the last 30 days, so a stranger failing on purpose cannot lock them out of their usual device.
+- [x] **Login CSRF.** `/login` and `/login/mfa` require `Content-Type: application/json`.
+- [x] **`Limiter.Hit` is capped** at `max` entries per key.
+- [x] **`/metrics` throttles wrong tokens** per address, and `doctor` warns on a token under 24 characters.
+- [x] **Guard memory ceiling.** `max_memory` in `policy.yaml`: every managed create must carry a `Memory` limit at or
+  under it, `MemorySwap` may not be unlimited or over twice it, `ShmSize` is capped; tmpfs is bounded through the
+  limit. The dashboard shows it and every save keeps it.
+- [x] **Guard source allowlist (T3).** `GUARD_ALLOW_FROM` (CIDRs) closes other clients on the guard's public listener.
+- [x] **Audit anchor (R1).** The log's head hash is posted through the notifier at start and daily when it has grown;
+  `crowsnest audit verify --anchor N:HASH` proves the file still holds that entry (catches truncation and rewrites).
+- [x] **`crowsnest doctor` checks (T2 and others):** games and backups folders mounted `nosuid`, admins with a
+  password and no TOTP or passkey, `pin_digests` off, no `max_memory`, `secure_cookies` with empty `trusted_proxies`,
+  short metrics token.
+- [x] **Confirmed, no change needed:** a module's `connect:` entries (join password, invite code) are shown to every
+  signed-in player by design, and generated admin secrets only appear in the admin's games list; the dashboard JS has
+  no HTML-injection sinks; a dashboard policy edit never widens name patterns; OIDC discovery reaching the LAN is
+  intended (documented in the threat model).
+
 ## Prod verification (2026-11-16 to 2026-11-18)
 
 - [x] **Upgrade prod from 0.11.0 (R4).** Done 2026-11-16: template-check reconciled, game containers created, master

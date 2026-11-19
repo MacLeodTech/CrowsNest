@@ -35,7 +35,7 @@ What a failure means:
 
 | You see | Likely cause |
 |---|---|
-| `does not exist` on Start | the container was never created on the host |
+| `does not exist` on Start | the container is missing from the host; see [troubleshooting](troubleshooting.md#start-fails-container-does-not-exist) |
 | Start refused with a memory message | not enough free RAM for the declared size |
 | Backup fails with a refused command | the guard scope lacks `"exec": true`, or execguard has no rule for it |
 | Stays *starting* forever | the game's status probe cannot reach it (REST port, password) |

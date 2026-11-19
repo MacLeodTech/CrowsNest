@@ -92,6 +92,7 @@ func TestSetup_CreatesTheFirstAdminOnce(t *testing.T) {
 	// And the new admin can sign in.
 	login := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(`{"username":"owner","password":"correct horse"}`))
+	req.Header.Set("Content-Type", "application/json")
 	h.mux().ServeHTTP(login, req)
 	if login.Code != http.StatusOK {
 		t.Fatalf("login as the new admin = %d", login.Code)

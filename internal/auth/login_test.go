@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,6 +31,7 @@ func doLogin(t *testing.T, svc *Service, username, password string) *httptest.Re
 	t.Helper()
 	body, _ := json.Marshal(loginRequest{Username: username, Password: password})
 	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	svc.ServeLogin(rec, req)
 	return rec
@@ -101,6 +103,7 @@ func TestServeLogin_BodyTooLarge(t *testing.T) {
 	oversized := bytes.Repeat([]byte("a"), maxLoginBodyBytes+1)
 	body, _ := json.Marshal(loginRequest{Username: "alice", Password: string(oversized)})
 	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	svc.ServeLogin(rec, req)
 
@@ -148,6 +151,7 @@ func TestLoginWithSecondFactor(t *testing.T) {
 
 	post := func(h http.HandlerFunc, body string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		for _, c := range cookies {
 			req.AddCookie(c)
 		}
@@ -224,6 +228,8 @@ func TestLoginThrottle_OnlyFailuresCountAndPerUser(t *testing.T) {
 	from := func(ip, pw string) int {
 		body, _ := json.Marshal(loginRequest{Username: "alice", Password: pw})
 		req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", "application/json")
 		req.RemoteAddr = ip + ":1234"
 		rec := httptest.NewRecorder()
 		svc.ServeLogin(rec, req)
@@ -270,5 +276,98 @@ func TestLogin_UpgradesAWeakHash(t *testing.T) {
 	r, _ := store.Lookup("alice")
 	if r.Hash == weak || HashNeedsUpgrade(r.Hash) || !VerifyPassword(r.Hash, "s3cret-password") {
 		t.Fatalf("hash not upgraded: %q", r.Hash)
+	}
+}
+
+func TestLogin_RequiresJSONContentType(t *testing.T) {
+	svc := newTestService(t)
+	body, _ := json.Marshal(loginRequest{Username: "alice", Password: "s3cret-password"})
+	for _, ct := range []string{"", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"} {
+		req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+		if ct != "" {
+			req.Header.Set("Content-Type", ct)
+		}
+		rec := httptest.NewRecorder()
+		svc.ServeLogin(rec, req)
+		if rec.Code != http.StatusUnsupportedMediaType {
+			t.Errorf("Content-Type %q = %d, want 415", ct, rec.Code)
+		}
+	}
+	// A charset parameter is still JSON.
+	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	rec := httptest.NewRecorder()
+	svc.ServeLogin(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("json with a charset = %d, want 200", rec.Code)
+	}
+}
+
+// A stranger failing on purpose must not lock the real person out of their usual address.
+func TestLoginThrottle_KnownAddressSurvivesUserLockout(t *testing.T) {
+	svc := newTestService(t)
+	svc.LoginLimiter = NewLimiter(100, time.Minute)
+	svc.UserLimiter = NewLimiter(3, time.Minute)
+	from := func(ip, pw string) int {
+		body, _ := json.Marshal(loginRequest{Username: "alice", Password: pw})
+		req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = ip + ":1234"
+		rec := httptest.NewRecorder()
+		svc.ServeLogin(rec, req)
+		return rec.Code
+	}
+	if got := from("192.0.2.9", "s3cret-password"); got != http.StatusOK {
+		t.Fatalf("first sign-in = %d", got)
+	}
+	for i, ip := range []string{"198.51.100.1", "198.51.100.2", "198.51.100.3"} {
+		if got := from(ip, "nope"); got != http.StatusUnauthorized {
+			t.Fatalf("attack %d = %d", i, got)
+		}
+	}
+	if got := from("198.51.100.4", "s3cret-password"); got != http.StatusTooManyRequests {
+		t.Errorf("a stranger's address during the attack = %d, want 429", got)
+	}
+	if got := from("192.0.2.9", "s3cret-password"); got != http.StatusOK {
+		t.Errorf("the user's own address during the attack = %d, want 200", got)
+	}
+}
+
+func TestLimiterHit_IsBounded(t *testing.T) {
+	l := NewLimiter(3, time.Minute)
+	for i := 0; i < 1000; i++ {
+		l.Hit("k")
+	}
+	if n := len(l.hits["k"]); n != 3 {
+		t.Errorf("kept %d hits, want 3", n)
+	}
+	if !l.Blocked("k") {
+		t.Error("key should still be blocked")
+	}
+}
+
+func TestKnownAddrsSurviveARestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "known-addrs.json")
+	var a Service
+	a.LoadKnownAddrs(path)
+	a.known.add("alex", "203.0.113.7")
+	var b Service // the panel restarted
+	b.LoadKnownAddrs(path)
+	if !b.known.has("alex", "203.0.113.7") {
+		t.Error("a known address was forgotten across a restart")
+	}
+	if b.known.has("alex", "198.51.100.1") || b.known.has("sam", "203.0.113.7") {
+		t.Error("an address became known for someone it was not")
+	}
+	if fi, err := os.Stat(path); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Errorf("file: %v %v", fi, err)
+	}
+	if err := os.WriteFile(path, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var c Service
+	c.LoadKnownAddrs(path) // unreadable: starts empty, no panic
+	if c.known.has("alex", "203.0.113.7") {
+		t.Error("garbage file produced an exemption")
 	}
 }

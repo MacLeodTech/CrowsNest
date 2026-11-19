@@ -224,8 +224,22 @@ host_ips: [10.0.0.2]                   # optional: limits the address ports are 
 exec: false                            # may managed scopes use docker exec (save-on-stop hooks need it)
 labels: []                             # extra labels they may require (the watchtower opt-out is always fine)
 pin_digests: true                      # managed creates must name the image by digest (see "Image pinning" below)
+# max_memory: 16g                      # optional ceiling for any one managed container (see "Memory ceiling" below)
 max_scopes: 64
 ```
+
+**Memory ceiling.** With `max_memory` set, the guard refuses a managed create that has no `Memory` limit, one over
+the ceiling, an unlimited `MemorySwap` (or one over twice the ceiling) and a `ShmSize` over it. The panel's own memory
+admission lives in the panel, which the guard assumes may be compromised; this is the guard's copy of it. Tmpfs pages
+are charged to the container's memory limit, so the ceiling bounds them too. Set it to your largest game, and give
+every module a `runtime.memory` (a module without one cannot be created under a ceiling). It is shown in the dashboard
+and kept by every save, but only `policy.yaml` on the host can change it.
+
+**Who may use the guard.** The guard has no sign-in of its own, so whatever can reach its port gets the full power of
+its scopes. Set `GUARD_ALLOW_FROM` on the guard to the panel's address or subnet (comma-separated CIDRs, for example
+`GUARD_ALLOW_FROM=172.20.0.0/16`): other clients are closed at once and logged. Pin the internal network's subnet in
+compose so the range does not move. Unset, any container on that network may use the guard, and the guard says so at
+start. Keep that network to the panel and the guard, and never attach a game to it.
 
 - **Ports come from the games you allow.** On the Games page each bundled game has a switch. Turning it on asks
   for your password, is written to the history, and adds that game's published ports (shown under the card with
