@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/logging"
 	"log"
 	"mime"
 	"net"
@@ -423,7 +424,7 @@ func (s *Service) upgradeHash(username, hash, password string) {
 		return
 	}
 	if err := SetUserHash(s.Store.Path(), username, nh); err != nil {
-		log.Printf("auth: could not upgrade %s's password hash: %v", username, err)
+		log.Printf("auth: could not upgrade %s's password hash: %s", logging.Clean(username), logging.Clean(err.Error()))
 		return
 	}
 	if _, err := s.Store.Reload(); err != nil {
