@@ -46,7 +46,7 @@ func (e Env) Secret(name string) string {
 		return e.Lookup(name)
 	}
 	if ReservedEnv(name) {
-		log.Printf("modules: refusing to read %s for a game: it is one of the panel's own secrets", name)
+		log.Printf("modules: a game asked to read one of the panel's own secrets; refused")
 		return ""
 	}
 	return os.Getenv(name)

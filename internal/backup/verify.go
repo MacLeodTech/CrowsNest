@@ -104,7 +104,7 @@ func readTar(r io.Reader) error {
 			return fmt.Errorf("after %d entries: %w", n, err)
 		}
 		n++
-		if _, err := io.Copy(io.Discard, tr); err != nil { // also verifies the gzip checksum at the end
+		if _, err := io.Copy(io.Discard, tr); err != nil { // #nosec G110 -- nothing is kept, so a bomb costs time, not memory; also checks the gzip checksum
 			return fmt.Errorf("entry %d: %w", n, err)
 		}
 	}
@@ -130,7 +130,7 @@ func readZip(path string) error {
 		if err != nil {
 			return fmt.Errorf("%s: %w", f.Name, err)
 		}
-		_, err = io.Copy(io.Discard, rc) // checks the entry's CRC
+		_, err = io.Copy(io.Discard, rc) // #nosec G110 -- checks the entry's CRC; nothing is kept
 		rc.Close()
 		if err != nil {
 			return fmt.Errorf("%s: %w", f.Name, err)
