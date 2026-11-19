@@ -81,3 +81,21 @@ func TestDoctorSymlinksFlagsOnlyLinksLeadingOutside(t *testing.T) {
 		t.Errorf("a link leading outside: %q (warns %d)", out, r.warns)
 	}
 }
+
+func TestDoctorSuidAlsoWantsNodev(t *testing.T) {
+	dir := t.TempDir()
+	mi := filepath.Join(t.TempDir(), "mi")
+	run := func(opts string) (string, *doctorReport) {
+		_ = os.WriteFile(mi, []byte("22 1 8:1 / / "+opts+" - ext4 /dev/sda1 rw\n"), 0o600)
+		var out bytes.Buffer
+		r := &doctorReport{w: &out}
+		doctorSuid(r, "the games folder", dir, mi)
+		return out.String(), r
+	}
+	if out, r := run("rw,nosuid,relatime"); r.warns != 1 || !strings.Contains(out, "nodev") {
+		t.Errorf("nosuid without nodev: %q (warns %d)", out, r.warns)
+	}
+	if out, r := run("rw,nosuid,nodev,relatime"); r.warns != 0 || !strings.Contains(out, "nosuid,nodev") {
+		t.Errorf("both set: %q (warns %d)", out, r.warns)
+	}
+}
