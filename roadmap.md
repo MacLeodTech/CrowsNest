@@ -59,11 +59,17 @@ Nothing left here that can be built without a live host; see the sections above 
 
 The review and its fixes are in `CHANGELOG.md` and the findings table is in `docs/threat-model.md`. Left:
 
-- [ ] **Turn the new protections on in prod.** In `~/docker`: set `GUARD_ALLOW_FROM` on the guard to the internal
-  network's subnet (pin the subnet in compose first), add `max_memory:` to `policy/policy.yaml` (the largest game's
-  `runtime.memory`; every module then needs one), mount the games and backups disks `nosuid,nodev` and run `crowsnest
-  doctor`, set a `/metrics` token of 24+ characters if `/metrics` is on, enrol TOTP or a passkey on every admin, and
-  confirm the audit anchor notice arrives on Discord (it needs `DISCORD_WEBHOOK_URL`; see the live check above).
+- [ ] **Finish turning the new protections on in prod** (2026-11-19: `GUARD_ALLOW_FROM`, `max_memory: 12g` and the
+  `/metrics` token are live; Valheim and Windrose got `runtime.memory` for it). What `crowsnest doctor` still warns
+  about on prod:
+  - the games and backups disks are not mounted `nosuid,nodev`. `/home/plex/docker/storage` is one ext4 disk
+    (fstab line 20, `defaults`). A scan found no setuid files or device nodes on it, so the remount is safe: add
+    `nosuid,nodev` to that fstab line, `sudo mount -o remount,nosuid,nodev /home/plex/docker/storage`, re-run doctor
+    (needs root; see `docs/operating.md`);
+  - `DISCORD_WEBHOOK_URL` is not set, so no Discord notices go out, including the audit anchor (set it in `.env`,
+    restart the panel, then confirm the anchor notice arrives; see the live check above);
+  - `jeff` and `scott` still have stored password hashes in `users.env` though password login is off (remove them);
+  - enrol TOTP or a passkey on every admin (check the Users page).
 - [ ] **Lockout from a new address** is still possible while an attack on one name runs: the per-user throttle
   exempts only addresses that user signed in from in the last 30 days (now kept in `known-addrs.json`). A progressive
   delay instead of a block, or a second factor that bypasses it, would close the rest.
