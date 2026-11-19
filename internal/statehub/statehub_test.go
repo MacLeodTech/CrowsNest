@@ -88,7 +88,8 @@ type rig struct {
 	done   chan struct{}
 }
 
-func newRig(t *testing.T) *rig {
+// newRig starts the hub. before runs first, for a test that must be listening when the first observation lands.
+func newRig(t *testing.T, before ...func(*rig)) *rig {
 	t.Helper()
 	r := &rig{st: &fakeStatus{s: games.StatusOffline}, pl: &fakePlayers{}, clk: &clock{timers: make(chan timer, 100)}}
 	var err error
@@ -100,6 +101,9 @@ func newRig(t *testing.T) *rig {
 	r.hub.After = r.clk.After
 	r.hub.ReconcileInterval = time.Hour
 	r.hub.Busy = func(string) bool { return r.busy.Load() }
+	for _, f := range before {
+		f(r)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancel, r.done = cancel, make(chan struct{})
 	go func() { r.hub.Run(ctx); close(r.done) }()
@@ -145,8 +149,8 @@ func TestOfflineSkipsPlayers(t *testing.T) {
 }
 
 func TestNotifiesOnlyOnChange(t *testing.T) {
-	r := newRig(t)
-	sub := r.hub.Subscribe()
+	var sub *Subscription
+	r := newRig(t, func(r *rig) { sub = r.hub.Subscribe() }) // subscribed before the hub starts, or the first observation can beat us
 	defer sub.Close()
 	tm := r.clk.next(t) // first observation is a change
 	select {
