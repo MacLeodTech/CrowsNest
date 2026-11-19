@@ -4,6 +4,12 @@ Everything that has landed, moved out of [`roadmap.md`](roadmap.md) so the roadm
 Newest first within each part. Design detail for the modular-games rework is in
 [`docs/modularization-plan.md`](docs/modularization-plan.md).
 
+## The binary knows its version (2026-11-19)
+
+- **`crowsnest version`** prints the release number, and the startup log line shows it. The release workflow passes the
+  tag to the Dockerfile (`VERSION` build argument, `-X main.version`); a plain `go build` reports `dev`
+  (plus the commit when Go recorded one).
+
 ## STRIDE threat-model fixes (2026-11-19)
 
 - **The audit anchor is posted within 30 seconds of a user, sign-in or settings change**, not only at start and daily,
