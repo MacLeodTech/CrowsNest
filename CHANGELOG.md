@@ -31,6 +31,13 @@ Newest first within each part. Design detail for the modular-games rework is in
 - **Monitoring examples** in `docs/examples/monitoring/`: a Prometheus scrape job, alert rules (crash loop, backups
   folder, damaged backup, offsite copy, low disk and memory) and a Grafana dashboard. `/metrics` gained
   `crowsnest_backups_damaged` and `crowsnest_backups_offsite_ok`.
+- **Play stats on the dashboard** ("by the numbers" under the logbook; `GET /api/play-stats?days=`): per game over
+  7, 30 or 90 days, time aboard, visits, players, peak, crashes, a bar per day and the top players, for the games the
+  user may see. Also fixed: a file-edit entry in the logbook threw an error instead of showing.
+- **Settings, Backups names a damaged newest backup.**
+- **Scheduled backups.** A schedule entry can now be "Back up" as well as start or stop, so a game that stays up for
+  weeks is backed up on the days and time you pick (it was only backed up on stop or by hand). A game that is down or
+  already being backed up is skipped quietly; a real failure is announced.
 - **Modules can no longer read the panel's own secrets.** A module's `password_env` (api, rcon, players) naming a
   `CROWSNEST_`/`GUARD_` variable, or one `config.yaml` uses for a webhook, metrics token or sign-in secret, is refused
   at load and reads as empty at run time, so a module cannot aim a secret at its own API address. The rest of the

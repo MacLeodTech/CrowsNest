@@ -244,6 +244,7 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.Handle("GET /api/games/{id}/players", a.requireSession(http.HandlerFunc(a.handlePlayers)))
 	mux.Handle("GET /api/games/{id}/info", a.requireSession(http.HandlerFunc(a.handleInfo)))
 	mux.Handle("GET /api/activity", a.requireSession(http.HandlerFunc(a.handleActivity)))
+	mux.Handle("GET /api/play-stats", a.requireSession(http.HandlerFunc(a.handlePlayStats)))
 	mux.Handle("GET /api/audit/export", auth.RequireSession(a.Auth.Sessions, auth.RequireAdmin(a.Auth.Sessions, http.HandlerFunc(a.handleAuditExport))))
 	mux.Handle("GET /api/audit", auth.RequireSession(a.Auth.Sessions, auth.RequireAdmin(a.Auth.Sessions, http.HandlerFunc(a.handleAudit))))
 	mux.Handle("GET /api/games/{id}/console", auth.RequireSession(a.Auth.Sessions, auth.RequireAdmin(a.Auth.Sessions, http.HandlerFunc(a.handleConsole))))

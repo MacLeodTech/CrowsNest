@@ -130,6 +130,11 @@ logged. A game that crashes `crash_loop.crashes` times (default 3) within `crash
 reported once as a crash loop, in the log and in Discord when a webhook is set, and again only after it has gone a
 full window below the threshold. Crashes from before CrowsNest started are not counted.
 
+**Play stats.** Under the logbook on the dashboard, "by the numbers" adds up each game's activity over 7, 30 or 90
+days from the activity log: time aboard (all players added together), visits, different players, the most aboard at
+once, crashes, a bar per day and the players with the most time. It shows only games the signed-in user may see, and
+only counts what the log holds (see `server.history_retention_days`). The same data is at `GET /api/play-stats?days=30`.
+
 **Metrics.** Set `server.metrics_token_env` to the name of an environment variable holding a token, and
 `GET /metrics` serves Prometheus metrics (game up/players/crashes/crash-looping, host memory, load and disk) to a
 scraper sending `Authorization: Bearer <token>`. With no token the route does not exist. It is outside the login
@@ -141,13 +146,14 @@ A strip under the fleet banner shows host memory, load and free disk space for t
 `server.host_disk_paths`, and turns red when a disk is under 10% free or memory is nearly full. Mount the disk your
 game data and images live on (read-only is fine) and list its path to watch it.
 
-## Scheduled starts and stops
+## Scheduled starts, stops and backups
 
-Settings, Schedule: start or stop a game at a time of day on chosen days (for example start Friday 18:00, stop
+Settings, Schedule: start, stop or back up a game at a time of day on chosen days (for example start Friday 18:00, stop
 Sunday 23:00). Times are in `server.tz`. Schedules are kept in `schedules.json` next to `settings.json`. A start still
 obeys the memory and one-game-at-a-time rules, and a refused start or stop is recorded in the activity feed and sent
 to your notification channels. "Only if empty" makes a stop skip when anyone is connected or the player count is
-unknown. A time that passes while CrowsNest is down is not made up afterwards.
+unknown. A backup entry runs the game's usual backup while it is up; a game that is down or already being backed up
+is skipped. A time that passes while CrowsNest is down is not made up afterwards.
 
 ## Admin console
 

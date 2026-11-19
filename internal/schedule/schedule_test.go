@@ -2,10 +2,12 @@ package schedule
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/macleodtech/crowsnest/internal/backup"
 	"github.com/macleodtech/crowsnest/internal/games"
 )
 
@@ -88,5 +90,51 @@ func TestReloadFromDisk(t *testing.T) {
 	again, err := Open(path)
 	if err != nil || len(again.List()) != 1 || again.List()[0].Days[0] != 1 {
 		t.Fatalf("reload = %+v %v", again.List(), err)
+	}
+}
+
+type fakeBackups struct {
+	got []string
+	err error
+}
+
+func (f *fakeBackups) Request(_ context.Context, d games.GameDef, actor string) error {
+	f.got = append(f.got, d.ID+" by "+actor)
+	return f.err
+}
+
+func TestBackupAction(t *testing.T) {
+	r, ctl, _ := setup(t, []Entry{{ID: "nightly", Game: "alpha", Action: "backup", Days: []int{5}, Time: "18:00", Enabled: true}})
+	fb := &fakeBackups{}
+	r.Backups = fb
+	var told []string
+	r.Notify = func(_ context.Context, m string) { told = append(told, m) }
+	r.Tick(context.Background())
+	if len(fb.got) != 1 || fb.got[0] != "alpha by schedule" || len(ctl.starts)+len(ctl.stops) != 0 {
+		t.Fatalf("backups %v starts %v stops %v", fb.got, ctl.starts, ctl.stops)
+	}
+	if len(told) != 0 {
+		t.Errorf("a normal backup told someone it failed: %v", told)
+	}
+
+	// a game that is down, or already being backed up, is skipped without a fuss
+	for _, err := range []error{backup.ErrNotRunning, backup.ErrBusy} {
+		r, _, _ := setup(t, []Entry{{ID: "nightly", Game: "alpha", Action: "backup", Days: []int{5}, Time: "18:00", Enabled: true}})
+		r.Backups = &fakeBackups{err: err}
+		told = nil
+		r.Notify = func(_ context.Context, m string) { told = append(told, m) }
+		r.Tick(context.Background())
+		if len(told) != 0 {
+			t.Errorf("%v was announced: %v", err, told)
+		}
+	}
+	// a real failure is announced; so is a missing backup manager
+	r2, _, _ := setup(t, []Entry{{ID: "nightly", Game: "alpha", Action: "backup", Days: []int{5}, Time: "18:00", Enabled: true}})
+	r2.Backups = &fakeBackups{err: errors.New("disk full")}
+	told = nil
+	r2.Notify = func(_ context.Context, m string) { told = append(told, m) }
+	r2.Tick(context.Background())
+	if len(told) != 1 {
+		t.Errorf("a failed backup was not announced: %v", told)
 	}
 }

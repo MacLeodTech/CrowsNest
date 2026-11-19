@@ -19,6 +19,7 @@ import (
 
 	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"github.com/macleodtech/crowsnest/internal/audit"
+	"github.com/macleodtech/crowsnest/internal/backup"
 	"github.com/macleodtech/crowsnest/internal/games"
 	"github.com/macleodtech/crowsnest/internal/history"
 	"github.com/macleodtech/crowsnest/internal/statehub"
@@ -27,6 +28,9 @@ import (
 const (
 	ActionStart = "start"
 	ActionStop  = "stop"
+	// ActionBackup takes a backup of a game that is running. A game left up for weeks is otherwise backed up only
+	// when it is stopped or someone asks.
+	ActionBackup = "backup"
 	// MaxEntries bounds the file.
 	MaxEntries = 100
 )
@@ -40,7 +44,7 @@ var (
 type Entry struct {
 	ID      string `json:"id"`
 	Game    string `json:"game"`
-	Action  string `json:"action"` // start or stop
+	Action  string `json:"action"` // start, stop or backup
 	Days    []int  `json:"days"`   // 0 = Sunday ... 6 = Saturday
 	Time    string `json:"time"`   // 24-hour HH:MM in the server's time zone
 	Enabled bool   `json:"enabled"`
@@ -56,8 +60,8 @@ func (e Entry) Validate(known func(string) bool) error {
 		return errors.New("each schedule needs an id of letters, digits, - or _")
 	case !known(e.Game):
 		return fmt.Errorf("%s: unknown game", e.ID)
-	case e.Action != ActionStart && e.Action != ActionStop:
-		return fmt.Errorf("%s: action must be start or stop", e.ID)
+	case e.Action != ActionStart && e.Action != ActionStop && e.Action != ActionBackup:
+		return fmt.Errorf("%s: action must be start, stop or backup", e.ID)
 	case !timeRe.MatchString(e.Time):
 		return fmt.Errorf("%s: time must be 24-hour HH:MM", e.ID)
 	case len(e.Days) == 0 || len(e.Days) > 7:
@@ -137,6 +141,11 @@ type Controller interface {
 	RequestStop(ctx context.Context, id string) error
 }
 
+// Backuper starts a backup of a running game (*backup.Manager).
+type Backuper interface {
+	Request(ctx context.Context, d games.GameDef, actor string) error
+}
+
 // Actor is the name the runner acts under; actionContext adds it with ActorCtx.
 const Actor = "schedule"
 
@@ -145,9 +154,11 @@ type Runner struct {
 	Store    *Store
 	Registry *games.Registry
 	Control  Controller
-	Hub      *statehub.Hub
-	History  history.Recorder
-	Loc      *time.Location
+	// Backups runs the backup action. Nil makes a backup entry fail with a notice.
+	Backups Backuper
+	Hub     *statehub.Hub
+	History history.Recorder
+	Loc     *time.Location
 	// ActorCtx wraps ctx so the controller knows who acts (exclusivity.WithActor).
 	ActorCtx func(ctx context.Context, name string) context.Context
 	// Notify, when set, is told about a failed or skipped entry.
@@ -231,6 +242,22 @@ func (r *Runner) fire(ctx context.Context, e Entry) {
 		if r.Notify != nil {
 			r.Notify(ctx, fmt.Sprintf("Scheduled %s of **%s** did not happen: %s", e.Action, d.DisplayName, msg))
 		}
+	}
+	if e.Action == ActionBackup {
+		if r.Backups == nil {
+			fail(history.KindBackup, "backups are not set up")
+			return
+		}
+		err := r.Backups.Request(actx, d, Actor)
+		if errors.Is(err, backup.ErrNotRunning) || errors.Is(err, backup.ErrBusy) {
+			return // down: its stop backup covers it; busy: one is already being taken
+		}
+		if err != nil {
+			fail(history.KindBackup, err.Error())
+			return
+		}
+		audit.Printf("schedule %s requested a backup of %s", e.ID, e.Game)
+		return
 	}
 	if e.Action == ActionStart {
 		if err := r.Control.RequestStart(actx, e.Game); err != nil {

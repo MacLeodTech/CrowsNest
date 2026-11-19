@@ -632,7 +632,7 @@ func serve() error {
 	}
 	app.Schedules = schedStore
 	sched := &schedule.Runner{
-		Store: schedStore, Registry: registry, Control: exclusivityMgr, Hub: hub, History: activity, Loc: loc,
+		Store: schedStore, Registry: registry, Control: exclusivityMgr, Backups: backups, Hub: hub, History: activity, Loc: loc,
 		ActorCtx: exclusivity.WithActor,
 		Notify:   func(ctx context.Context, msg string) { notifier.Notify(ctx, msg) },
 	}

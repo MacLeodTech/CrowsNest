@@ -908,7 +908,7 @@ window.addEventListener("beforeunload", () => {
       case "settings": return [`${who} changed settings${note}`, false];
       case "users": return [`${who} ${e.detail || "changed users"}`, false];
       case "backup": return [`${who} backed up ${game}${note}`, false];
-      case "files": return [`${who} ${detail}`, false];
+      case "files": return [`${who} ${e.detail || "edited a file"}`, false];
       case "console": return [`${who} used the ${game} console${note}`, false];
       default: return [`${e.kind} ${game}${note}`, false];
     }
@@ -963,6 +963,90 @@ window.addEventListener("beforeunload", () => {
   refreshActivity();
   poll(refreshActivity, 30000);
   window.refreshActivity = refreshActivity;
+})();
+
+
+// Play stats: time aboard, visits, players, peak and crashes per game over 7, 30 or 90 days, from the activity log.
+(() => {
+  const wrap = document.getElementById("stats-wrap");
+  const list = document.getElementById("stats-list");
+  if (!wrap || !list) return;
+  const nameOf = (id) => (id && cardFor(id) ? cardFor(id).dataset.name : id || "");
+  let days = 30;
+  const hours = (secs) => {
+    const h = secs / 3600;
+    return h >= 10 ? `${Math.round(h)}h` : `${h.toFixed(1)}h`;
+  };
+  const cell = (label, value) => {
+    const d = document.createElement("div");
+    const b = document.createElement("b");
+    b.textContent = value;
+    const s = document.createElement("span");
+    s.textContent = label;
+    d.append(b, s);
+    return d;
+  };
+  async function refreshStats() {
+    let data;
+    try {
+      const res = await fetch(`/api/play-stats?days=${days}`);
+      if (!res.ok) return;
+      data = await res.json();
+    } catch (err) {
+      return;
+    }
+    list.replaceChildren();
+    wrap.hidden = false;
+    if (data.games.length === 0) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = `Nobody has played in the last ${days} days.`;
+      list.appendChild(p);
+      return;
+    }
+    data.games.forEach((g) => {
+      const box = document.createElement("section");
+      box.className = "stat-game";
+      const h = document.createElement("h4");
+      h.textContent = nameOf(g.game);
+      const nums = document.createElement("div");
+      nums.className = "stat-nums";
+      nums.append(cell("aboard", hours(g.player_seconds)), cell("visits", String(g.visits)), cell("players", String(g.players)), cell("most at once", String(g.peak)));
+      if (g.crashes > 0) {
+        const c = cell("crashes", String(g.crashes));
+        c.className = "bad";
+        nums.appendChild(c);
+      }
+      const bars = document.createElement("div");
+      bars.className = "stat-bars";
+      bars.setAttribute("role", "img");
+      bars.setAttribute("aria-label", `Time aboard per day, last ${days} days`);
+      const max = Math.max(...g.days.map((d) => d.player_seconds), 1);
+      g.days.forEach((d) => {
+        const bar = document.createElement("i");
+        bar.style.height = Math.max((d.player_seconds / max) * 100, d.player_seconds > 0 ? 6 : 0) + "%";
+        bar.title = `${d.date}: ${hours(d.player_seconds)}`;
+        bars.appendChild(bar);
+      });
+      box.append(h, nums, bars);
+      if (g.top && g.top.length > 0) {
+        const top = document.createElement("p");
+        top.className = "stat-top";
+        top.textContent = "Most aboard: " + g.top.map((t) => `${t.player} ${hours(t.seconds)}`).join(" · ");
+        box.appendChild(top);
+      }
+      list.appendChild(box);
+    });
+  }
+  wrap.querySelectorAll(".stats-days").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      days = Number(btn.dataset.days);
+      wrap.querySelectorAll(".stats-days").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      refreshStats();
+    });
+  });
+  refreshStats();
+  poll(refreshStats, 120000);
 })();
 
 
