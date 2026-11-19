@@ -80,8 +80,11 @@ func doctorSuid(r *doctorReport, what, path, mountinfo string) {
 	case !hasOpt(opts, "nosuid"):
 		r.add(docWarn, fmt.Sprintf("%s (%s) is not mounted nosuid: a setuid file planted there by a game container would stay setuid on the host", what, path),
 			"mount that disk with nosuid,nodev (an /etc/fstab options change) and remount it")
+	case !hasOpt(opts, "nodev"):
+		r.add(docWarn, fmt.Sprintf("%s (%s) is mounted nosuid but not nodev: a device node planted there would still work on the host", what, path),
+			"add nodev to that disk's /etc/fstab options and remount it")
 	default:
-		r.add(docOK, fmt.Sprintf("%s is mounted nosuid", what), "")
+		r.add(docOK, fmt.Sprintf("%s is mounted nosuid,nodev", what), "")
 	}
 }
 

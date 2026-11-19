@@ -187,3 +187,14 @@ games:
 service in `compose.yaml`. An unset or empty variable is left out (and logged by name). Everything here is shown to
 every signed-in user, so list only what any player should see, such as a join password or invite code, and never
 the admin or REST password. Modules can declare the same thing with `connect:`.
+
+## Mounting the games and backups disks nosuid,nodev
+
+Add `nosuid,nodev` to the disk's options in `/etc/fstab`, then `sudo mount -o remount,nosuid,nodev <mount point>`
+(live: no reboot, running containers keep working). `crowsnest doctor` warns while either is missing. What changes:
+
+- Setuid/setgid bits and device nodes on that disk stop working. Game data, databases, media and backups never need
+  them. Before changing a shared disk, scan it: `find <mount> -xdev \( -perm -4000 -o -perm -2000 \) -type f -o -xdev \( -type b -o -type c \)`
+  (as root, or from a throwaway container with the disk mounted read-only, to reach folders owned by other users).
+- A backup or archive restored onto the disk loses any setuid bit it carried. That is the point.
+- Devices a container needs (`/dev/net/tun`, a GPU) come from the host's `/dev`, not this disk, so they are unaffected.
