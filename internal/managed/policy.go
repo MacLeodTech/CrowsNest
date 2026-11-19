@@ -115,6 +115,8 @@ type PolicyDoc struct {
 	MaxScopes   int      `json:"max_scopes" yaml:"max_scopes"`
 	// PinDigests: managed creates must name their image by digest. Nil in a save keeps what the file has.
 	PinDigests *bool `json:"pin_digests,omitempty" yaml:"pin_digests"`
+	// MaxMemory is shown, never edited here: SetPolicy keeps what the file has.
+	MaxMemory string `json:"max_memory,omitempty" yaml:"max_memory,omitempty"`
 	// Exceptions are shown, never edited here: SetPolicy keeps whatever the file has.
 	Exceptions []dockerguard.Exception `json:"exceptions,omitempty" yaml:"exceptions,omitempty"`
 	// TrustedKeys are shown, never edited here: they decide what the guard will take from a module's own manifest.
@@ -136,7 +138,7 @@ func (m *Manager) Policy() (PolicyState, error) {
 	return PolicyState{Editable: m.PolicyEditable, Policy: PolicyDoc{
 		GamesRoot: p.GamesRoot, BackupsRoot: p.BackupsRoot, Names: p.Names, Images: p.Images, Networks: p.Networks, Ports: p.Ports,
 		HostIPs: p.HostIPs, Exec: p.Exec, Labels: p.Labels, MaxScopes: p.MaxScopes, Exceptions: p.Exceptions,
-		PinDigests: &p.PinDigests,
+		PinDigests: &p.PinDigests, MaxMemory: p.MaxMemory,
 	}}, nil
 }
 
@@ -163,6 +165,14 @@ func narrowOnly(cur *dockerguard.Policy, d PolicyDoc) error {
 	if d.BackupsRoot != cur.BackupsRoot {
 		return fmt.Errorf("backups_root cannot be changed here (%s)", hint)
 	}
+	if len(d.Names) > 0 && len(cur.Names) > 0 {
+		// two name patterns can be compared: a narrower prefix (gs-a* inside gs-*) or a name the old ones match
+		for _, e := range d.Names {
+			if !dockerguard.NamePatternCovered(cur.Names, e) {
+				return fmt.Errorf("names: %q is not covered by the current policy (%s)", e, hint)
+			}
+		}
+	}
 	for _, l := range []struct {
 		name     string
 		now, was []string
@@ -173,6 +183,9 @@ func narrowOnly(cur *dockerguard.Policy, d PolicyDoc) error {
 	} {
 		if len(l.now) == 0 && len(l.was) > 0 && l.name != "ports" && l.name != "labels" {
 			return fmt.Errorf("%s: a list cannot be emptied here, because an empty one means the defaults (%s)", l.name, hint)
+		}
+		if l.name == "names" && len(l.was) > 0 {
+			continue // compared as patterns above
 		}
 		if err := subset(l.name, l.now, l.was); err != nil {
 			return err
@@ -209,10 +222,10 @@ func (m *Manager) SetPolicy(d PolicyDoc) error {
 		return errors.New("the policy is read-only here: it is edited in policy.yaml on the host")
 	}
 	// An exception loosens the guard for one container, so only the file on the host can add or change one.
-	d.Exceptions, d.TrustedKeys = nil, nil
+	d.Exceptions, d.TrustedKeys, d.MaxMemory = nil, nil, ""
 	cur, curErr := m.filePolicy()
 	if curErr == nil {
-		d.Exceptions, d.TrustedKeys = cur.Exceptions, cur.TrustedKeys
+		d.Exceptions, d.TrustedKeys, d.MaxMemory = cur.Exceptions, cur.TrustedKeys, cur.MaxMemory
 	}
 	if d.PinDigests == nil { // not sent: keep the file's setting
 		keep := curErr == nil && cur.PinDigests

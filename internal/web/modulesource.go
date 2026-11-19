@@ -225,6 +225,9 @@ func (a *App) handleRemoteInstall(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	if rc, ok := a.Managed.(interface{ Recover() int }); ok {
+		rc.Recover() // a game that failed for want of this module comes back without a restart
+	}
 	a.record(r, installed.ID, "installed the "+installed.ID+" module from "+b.URL+", signed by "+by+" (sha256 "+modules.Hash(body)[:12]+")")
 	writeJSON(w, http.StatusOK, map[string]string{"id": installed.ID, "signed_by": by})
 }
@@ -348,6 +351,9 @@ func (a *App) handleRemoteUpdate(w http.ResponseWriter, r *http.Request) {
 	if err := a.Modules.ReplaceRemote(installed); err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
+	}
+	if rc, ok := a.Managed.(interface{ Recover() int }); ok {
+		rc.Recover()
 	}
 	a.record(r, m.ID, "updated the "+m.ID+" module from "+e.Source+", signed by "+by+" (sha256 "+modules.Hash(body)[:12]+", was "+e.SHA256[:12]+")")
 	writeJSON(w, http.StatusOK, map[string]any{"id": m.ID, "signed_by": by,

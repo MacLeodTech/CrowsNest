@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/macleodtech/crowsnest/internal/auth"
 )
 
 type fakeCrashes struct{}
@@ -83,5 +86,27 @@ func TestListGames_FlagsCrashLooping(t *testing.T) {
 	}
 	if len(got) != 2 {
 		t.Fatalf("got %d games, want 2", len(got))
+	}
+}
+
+func TestMetrics_WrongTokensAreThrottled(t *testing.T) {
+	h := newHarness(t, nil, "windrose")
+	h.App.HostPaths = []string{t.TempDir()}
+	h.App.MetricsToken = "s3cret"
+	h.App.MetricsLimiter = auth.NewLimiter(3, time.Minute)
+	get := func(token string) int {
+		req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		h.mux().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for i := 0; i < 3; i++ {
+		if got := get("wrong"); got != http.StatusUnauthorized {
+			t.Fatalf("wrong token %d = %d", i, got)
+		}
+	}
+	if got := get("s3cret"); got != http.StatusTooManyRequests {
+		t.Errorf("right token after 3 failures = %d, want 429", got)
 	}
 }

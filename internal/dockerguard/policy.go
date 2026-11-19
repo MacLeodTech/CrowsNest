@@ -62,6 +62,11 @@ type Policy struct {
 	// a dashboard game runs. Pulls by tag stay allowed (that is how a new digest
 	// is found). The operator's own GUARD_SCOPES are not affected.
 	PinDigests bool `yaml:"pin_digests"`
+	// MaxMemory, when set (such as "16g"), is the most memory any managed container may ask for. Every create must
+	// then carry a Memory limit of at most this, a MemorySwap that is not unlimited and at most twice it, and a ShmSize
+	// of at most it. Tmpfs pages are charged to the container's memory limit, so this bounds them too. The panel's
+	// own admission check lives in the panel, which the guard assumes may be compromised; this is the guard's copy.
+	MaxMemory string `yaml:"max_memory,omitempty"`
 	// Exceptions let one named container do what the envelope otherwise never
 	// allows (a LAN address, a pinned IPv4, a relaxed seccomp profile). Each is
 	// exact: one name, one image, the networks and addresses listed, the
@@ -74,7 +79,32 @@ type Policy struct {
 	// guard by itself.
 	TrustedKeys []PolicyKey `yaml:"trusted_keys,omitempty"`
 
-	ports []portRange
+	ports     []portRange
+	maxMemory int64 // MaxMemory in bytes; zero is no ceiling
+}
+
+// MaxMemoryBytes is MaxMemory in bytes, zero when none is set.
+func (p *Policy) MaxMemoryBytes() int64 { return p.maxMemory }
+
+// ParseSize reads 512m, 16g, 2048k or a plain number of bytes (an optional trailing b or ib is ignored).
+func ParseSize(s string) (int64, error) {
+	t := strings.ToLower(strings.TrimSpace(s))
+	t = strings.TrimSuffix(strings.TrimSuffix(t, "b"), "i")
+	mult := int64(1)
+	for _, u := range []struct {
+		suffix string
+		m      int64
+	}{{"k", 1 << 10}, {"m", 1 << 20}, {"g", 1 << 30}, {"t", 1 << 40}} {
+		if strings.HasSuffix(t, u.suffix) {
+			mult, t = u.m, strings.TrimSuffix(t, u.suffix)
+			break
+		}
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
+	if err != nil || n <= 0 || n > (1<<62)/mult {
+		return 0, fmt.Errorf("%q is not a size such as 512m or 16g", s)
+	}
+	return n * mult, nil
 }
 
 // PolicyKey is one trusted publisher key.
@@ -332,6 +362,13 @@ func ParsePolicy(b []byte) (*Policy, error) {
 		}
 		p.ports = append(p.ports, pr)
 	}
+	if p.MaxMemory != "" {
+		n, err := ParseSize(p.MaxMemory)
+		if err != nil {
+			return nil, fmt.Errorf("policy: max_memory: %w", err)
+		}
+		p.maxMemory = n
+	}
 	for _, h := range p.HostIPs {
 		if _, err := netip.ParseAddr(h); err != nil {
 			return nil, fmt.Errorf("policy: bad host_ips entry %q", h)
@@ -397,6 +434,25 @@ func parsePortRange(s string) (portRange, error) {
 // NameAllowed reports whether name is a container the policy lets the panel
 // manage, the same test the guard applies to a managed scope.
 func (p *Policy) NameAllowed(name string) bool { return len(p.Names) == 0 || matchName(p.Names, name) }
+
+// NamePatternCovered reports whether everything the name entry e (exact, or ending in *) can match is already
+// matched by an entry of list: an exact name needs a matching entry, a prefix pattern needs a broader or equal prefix
+// pattern (an exact entry never covers a pattern).
+func NamePatternCovered(list []string, e string) bool {
+	q, wild := strings.CutSuffix(e, "*")
+	if !wild {
+		return matchName(list, e)
+	}
+	for _, w := range list {
+		if w == "*" {
+			return true
+		}
+		if p, ok := strings.CutSuffix(w, "*"); ok && strings.HasPrefix(q, p) {
+			return true
+		}
+	}
+	return false
+}
 
 func matchName(list []string, name string) bool {
 	for _, e := range list {

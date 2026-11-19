@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/macleodtech/crowsnest/internal/auth"
 	"github.com/macleodtech/crowsnest/internal/config"
@@ -356,5 +358,49 @@ func TestProbeURL(t *testing.T) {
 		if probeArg(refused) != 1 {
 			t.Errorf("probeArg(%q) should be refused", refused)
 		}
+	}
+}
+
+func TestBodyDeadlines_CutASlowBodyButNotAnOpenGet(t *testing.T) {
+	old := bodyReadTimeout
+	bodyReadTimeout = 300 * time.Millisecond
+	defer func() { bodyReadTimeout = old }()
+	srv := httptest.NewServer(bodyDeadlines(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet { // a stream: still open well after the read timeout
+			time.Sleep(600 * time.Millisecond)
+			_, _ = w.Write([]byte("still here"))
+			return
+		}
+		_, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "slow", http.StatusRequestTimeout)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})))
+	defer srv.Close()
+
+	conn, err := net.Dial("tcp", srv.Listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	// headers promise a body that never arrives
+	_, _ = conn.Write([]byte("POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 100\r\n\r\nabc"))
+	_ = conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	start := time.Now()
+	_, _ = io.ReadAll(conn) // returns when the server gives up on the connection
+	if d := time.Since(start); d > 2*time.Second {
+		t.Errorf("a trickled body held the connection for %v", d)
+	}
+
+	resp, err := http.Get(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if string(b) != "still here" {
+		t.Errorf("an open GET was cut: %q", b)
 	}
 }

@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"slices"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/macleodtech/crowsnest/internal/backup"
 	"github.com/macleodtech/crowsnest/internal/config"
+	"github.com/macleodtech/crowsnest/internal/dockerguard"
 	"github.com/macleodtech/crowsnest/internal/execguard"
 	"github.com/macleodtech/crowsnest/internal/managed"
 	"github.com/macleodtech/crowsnest/internal/modules"
@@ -104,13 +107,22 @@ func newExecProxy(ctx context.Context, listen, upstream string) (*http.Server, e
 
 // serveUntilDone runs srv until ctx ends, then shuts it down.
 func serveUntilDone(ctx context.Context, srv *http.Server) error {
+	return serveUntilDoneFrom(ctx, srv, nil)
+}
+
+// serveUntilDoneFrom is serveUntilDone that serves only clients inside allow (nil: everyone).
+func serveUntilDoneFrom(ctx context.Context, srv *http.Server, allow []netip.Prefix) error {
 	go func() { // #nosec G118 -- ctx has ended by now; the shutdown needs a fresh deadline of its own
 		<-ctx.Done()
 		sc, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(sc)
 	}()
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	l, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		return err
+	}
+	if err := srv.Serve(dockerguard.AllowFrom(l, allow, log.Printf)); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil

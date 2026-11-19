@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/macleodtech/crowsnest/internal/atomicfile"
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 // Helper edits files of a stopped game through a one-shot container. The managed-games manager provides it; it is
@@ -51,6 +52,9 @@ type Service struct {
 	Docker     Docker
 	Helper     Helper // optional: lets a stopped game's files be edited
 	HistoryDir string
+	// Vault, if set, encrypts each kept version: these files can hold passwords, and the editor only hides them on
+	// screen. Versions kept before it was set stay readable as they are.
+	Vault *vault.Vault
 
 	mu    sync.Mutex
 	locks map[string]*sync.Mutex
@@ -194,6 +198,9 @@ func (s *Service) dir(game, file string) string {
 	return filepath.Join(s.HistoryDir, game, file)
 }
 
+// historyPurpose binds a sealed version to its game and file, so one copied into another's folder does not open.
+func historyPurpose(game, file string) string { return "file-history:" + game + ":" + file }
+
 func (s *Service) keep(game, file, content string) error {
 	if s.HistoryDir == "" {
 		return errors.New("no history folder is configured")
@@ -203,7 +210,11 @@ func (s *Service) keep(game, file, content string) error {
 		return err
 	}
 	name := time.Now().UTC().Format("20060102T150405.000000000Z") + ".txt"
-	if err := atomicfile.Write(filepath.Join(d, name), []byte(content), 0o600); err != nil {
+	stored, err := s.Vault.Seal(historyPurpose(game, file), content)
+	if err != nil {
+		return err
+	}
+	if err := atomicfile.Write(filepath.Join(d, name), []byte(stored), 0o600); err != nil {
 		return err
 	}
 	vs, _ := s.versions(game, file)
@@ -254,7 +265,8 @@ func (s *Service) Version(game string, sp Spec, id string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			return string(b), nil
+			plain, _, err := s.Vault.Unseal(historyPurpose(game, sp.ID), string(b))
+			return plain, err
 		}
 	}
 	return "", os.ErrNotExist

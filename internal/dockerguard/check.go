@@ -476,6 +476,11 @@ func (g *Guard) checkCreate(q query, body any) error {
 	if err != nil {
 		return err
 	}
+	if scope.maxMemory > 0 {
+		if n, _ := asInt(host["Memory"]); n <= 0 { // a rule only sees a field that is present
+			return deny(403, "HostConfig.Memory is required for %s: the policy sets max_memory", quote(name))
+		}
+	}
 	mode := host["NetworkMode"]
 	if mode == nil || mode == "" {
 		mode = "default"

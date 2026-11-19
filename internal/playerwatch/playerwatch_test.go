@@ -209,3 +209,39 @@ func TestHubDriven_LeavesOnlyWhenConfirmedOffline(t *testing.T) {
 		t.Fatalf("events = %v, want bob's join then leaves for ann and bob", h.events)
 	}
 }
+
+func TestReadyNoticeOnlyAfterSeeingItStart(t *testing.T) {
+	st, out := &status{games.StatusOnline}, &sink{}
+	// no player source at all: the notice must not depend on counting players
+	reg, err := games.NewRegistry([]games.GameDef{{ID: "g", DisplayName: "Game", ContainerName: "g", Status: st}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := New(reg, nil, 0)
+	w.Ready = out
+	ctx := context.Background()
+
+	w.Tick(ctx) // found online (the panel restarted): nothing to announce
+	if len(out.msgs) != 0 {
+		t.Fatalf("an already-online game was announced: %v", out.msgs)
+	}
+	st.s = games.StatusStarting
+	w.Tick(ctx)
+	st.s = games.StatusUnknown // a failed probe changes nothing
+	w.Tick(ctx)
+	st.s = games.StatusOnline
+	w.Tick(ctx)
+	w.Tick(ctx) // still online: said once
+	if len(out.msgs) != 1 || !strings.Contains(out.msgs[0], "Game") || !strings.Contains(out.msgs[0], "ready") {
+		t.Fatalf("messages = %v", out.msgs)
+	}
+	st.s = games.StatusStarting // stopped while starting, then online later without a fresh starting reading
+	w.Tick(ctx)
+	st.s = games.StatusOffline
+	w.Tick(ctx)
+	st.s = games.StatusOnline
+	w.Tick(ctx)
+	if len(out.msgs) != 1 {
+		t.Errorf("announced a game that went offline in between: %v", out.msgs)
+	}
+}

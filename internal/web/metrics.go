@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
+	"github.com/macleodtech/crowsnest/internal/auth"
 	"net/http"
 	"strings"
 	"time"
@@ -29,8 +30,16 @@ type gameObs struct {
 // `Authorization: Bearer <metrics token>`. The route exists only when a token
 // is configured, and it is not behind the login session.
 func (a *App) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	ip := auth.ClientIP(r, a.Auth.TrustedProxies)
+	if a.MetricsLimiter != nil && a.MetricsLimiter.Blocked(ip) {
+		http.Error(w, "too many failed attempts, try again later", http.StatusTooManyRequests)
+		return
+	}
 	got, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !ok || subtle.ConstantTimeCompare([]byte(got), []byte(a.MetricsToken)) != 1 {
+		if a.MetricsLimiter != nil {
+			a.MetricsLimiter.Hit(ip)
+		}
 		w.Header().Set("WWW-Authenticate", `Bearer realm="crowsnest"`)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -88,6 +97,16 @@ func (a *App) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(&b, "crowsnest_backups_ok %d\n", ok)
 		metric("crowsnest_backups_free_bytes", "Free space in the shared backups folder.", "gauge")
 		fmt.Fprintf(&b, "crowsnest_backups_free_bytes %d\n", h.Free)
+		metric("crowsnest_backups_damaged", "Newest backup archives that failed their read-back check.", "gauge")
+		fmt.Fprintf(&b, "crowsnest_backups_damaged %d\n", len(h.Damaged))
+	}
+	if a.Backups != nil && a.Backups.Offsite().Configured {
+		metric("crowsnest_backups_offsite_ok", "1 while the offsite copy's last report was good and recent.", "gauge")
+		ok := 0
+		if a.Backups.OffsiteHealthy() {
+			ok = 1
+		}
+		fmt.Fprintf(&b, "crowsnest_backups_offsite_ok %d\n", ok)
 	}
 
 	snap, _ := a.hostMemo.Do(r.Context(), "host", 5*time.Second, func(context.Context) hoststats.Snapshot {

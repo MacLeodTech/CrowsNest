@@ -30,15 +30,14 @@ With the default of one game at a time this rarely matters. It starts to matter 
 
 ## Starting is asynchronous
 
-Start (and the start half of Switch) returns as soon as the limit, cooldown and memory checks pass. The
-`docker compose up` itself, which includes pulling a multi-GB image the first time, runs in the background with a
-30 minute limit. While it runs the game shows as **starting**, counts toward the limit, and its progress bar reads
-"Pulling image / creating container" until the container exists. A failed start shows up as a toast on the
-dashboard and as an `exclusivity: start ... failed` line in the log. Stop cancels a start that's still running.
+Start (and the start half of Switch) returns as soon as the limit, cooldown and memory checks pass. The start itself
+runs in the background with a 30 minute limit. While it runs the game shows as **starting**, counts toward the limit,
+and its progress bar follows the start. A failed start shows up as a toast on the dashboard and as an
+`exclusivity: start ... failed` line in the log. Stop cancels a start that's still running.
 
-With a compose file configured, Start always runs `compose up -d`, so edits to the compose file or `.env` take
-effect on the next start (compose recreates the container). Behind a Docker API proxy that denies container delete
-and rename, that recreate fails. Run `docker rm <game>` on the host, then Start again.
+CrowsNest starts and stops containers that already exist, through the Docker Engine API; it does not run
+`docker compose` and does not create or pull on Start. A game whose container is missing fails with
+`container "<name>" does not exist`. See [troubleshooting](troubleshooting.md#start-fails-container-does-not-exist).
 
 ## Automatic shutdown and settings
 
@@ -54,7 +53,6 @@ Any signed-in user can change these from **Settings** on the dashboard, and the 
 | Stop empty servers overnight / from / until | the overnight window, in `server.tz` hours |
 | Servers allowed at once | how many games may run together |
 | Per game: idle minutes / restart wait / overnight shutdown | override the idle timeout, the pause required between stopping and restarting, and whether the game is included in the overnight stop, for one game; an empty box uses the global value or the module's default |
-| Update on start | run `docker compose pull` for the game each time it starts, so a restart picks up new server versions (a failed pull is logged and the old image is used) |
 
 `config.yaml` holds the defaults. Whatever is saved from the dashboard is written to `server.settings_file`
 (default `/app/data/settings.json`) and takes precedence from then on. Mount a directory there so it survives
@@ -115,7 +113,11 @@ docker compose exec crowsnest crowsnest audit export > audit.jsonl
 ```
 
 Settings → Audit log has an **Export audit file** link (admins) that downloads the same file. Verify cannot see
-entries cut off the end, so keep the last hash it prints somewhere else (and compare after the next check). The
+entries cut off the end or a whole file rewritten, so with a notification channel set up CrowsNest posts an **audit
+anchor** (entry number and hash) at start and then daily when the log has grown. The panel cannot reach those
+messages, so they are the outside copy: check one with
+`crowsnest audit verify --anchor 1234:<hash from the notice>`, which fails if that entry is gone or different. Without
+a channel, keep the last hash `verify` prints somewhere else and compare after the next check. The
 panel will not start on a file whose chain is broken; move it aside to begin a new one. It is part of
 `crowsnest state export`. The hash chain proves the file was not changed after the fact by someone without the
 panel's access; someone who can rewrite the whole file can rebuild the chain, so ship copies off the machine if
@@ -131,7 +133,9 @@ full window below the threshold. Crashes from before CrowsNest started are not c
 **Metrics.** Set `server.metrics_token_env` to the name of an environment variable holding a token, and
 `GET /metrics` serves Prometheus metrics (game up/players/crashes/crash-looping, host memory, load and disk) to a
 scraper sending `Authorization: Bearer <token>`. With no token the route does not exist. It is outside the login
-session, so if the panel is reachable from the internet, treat the token like a password.
+session, so if the panel is reachable from the internet, treat the token like a password. Backup health is in the
+metrics too (`crowsnest_backups_ok`, `_damaged`, `_offsite_ok`, `_free_bytes`). `docs/examples/monitoring/` holds a
+scrape job, alert rules and a Grafana dashboard to start from.
 
 A strip under the fleet banner shows host memory, load and free disk space for the paths in
 `server.host_disk_paths`, and turns red when a disk is under 10% free or memory is nearly full. Mount the disk your

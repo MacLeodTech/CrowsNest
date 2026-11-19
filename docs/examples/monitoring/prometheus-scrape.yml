@@ -1,0 +1,11 @@
+# Add under scrape_configs: in prometheus.yml. The token is the value of the variable named by
+# server.metrics_token_env; keep it in a file Prometheus reads rather than in this one.
+scrape_configs:
+  - job_name: crowsnest
+    metrics_path: /metrics
+    scheme: https
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/crowsnest-token
+    static_configs:
+      - targets: ["crowsnest.example.com"]

@@ -54,6 +54,7 @@ services:
       - GUARD_SCOPES_FILE=/etc/crowsnest/managed/scopes.json
       - GUARD_POLICY=/etc/crowsnest/policy/policy.yaml
       - GUARD_MODULES_DIR=/app/data/modules      # read-only: lets the guard check signed URL-installed modules
+      # - GUARD_ALLOW_FROM=172.20.0.0/16         # only the panel's subnet may use the guard (pin the network's subnet first)
     healthcheck:
       test: ["CMD", "/app/crowsnest", "healthcheck", "http://127.0.0.1:2375/_ping"]
       interval: 60s

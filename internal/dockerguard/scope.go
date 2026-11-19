@@ -44,6 +44,10 @@ type Scope struct {
 	// written in a scope's JSON, so only the policy turns it on.
 	pinDigest bool
 
+	// maxMemory is the policy's max_memory for a managed scope (zero: none). Like pinDigest it cannot be written in a
+	// scope's JSON, so only the policy sets it.
+	maxMemory int64
+
 	// needsOwner is set on a managed scope whose name the policy does not list
 	// (the policy has no "names"): the guard then acts only on a container
 	// carrying OwnerLabel, so a scope named after someone else's container

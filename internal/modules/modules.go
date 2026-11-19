@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/macleodtech/crowsnest/internal/config"
@@ -37,12 +38,45 @@ type Env struct {
 	Lookup func(name string) string
 }
 
-// Secret returns the value of the named variable, "" when unset.
+// Secret returns the value of the named variable, "" when unset. A game set up in config.yaml reads the process
+// environment, so a module must not be able to name one of the panel's own secrets (the master key, a webhook, a
+// sign-in client secret) and aim it at its own API address: those names give "".
 func (e Env) Secret(name string) string {
 	if e.Lookup != nil {
 		return e.Lookup(name)
 	}
+	if ReservedEnv(name) {
+		log.Printf("modules: a game asked to read one of the panel's own secrets; refused")
+		return ""
+	}
 	return os.Getenv(name)
+}
+
+var (
+	reservedMu  sync.RWMutex
+	reservedEnv = map[string]bool{}
+)
+
+// ReserveEnv marks environment variables a module's password_env may never read, on top of every CROWSNEST_ and
+// GUARD_ name. main lists the ones config.yaml names (webhooks, metrics token, sign-in secrets).
+func ReserveEnv(names ...string) {
+	reservedMu.Lock()
+	defer reservedMu.Unlock()
+	for _, n := range names {
+		if n != "" {
+			reservedEnv[n] = true
+		}
+	}
+}
+
+// ReservedEnv reports whether a module may not read the variable name.
+func ReservedEnv(name string) bool {
+	if strings.HasPrefix(name, "CROWSNEST_") || strings.HasPrefix(name, "GUARD_") {
+		return true
+	}
+	reservedMu.RLock()
+	defer reservedMu.RUnlock()
+	return reservedEnv[name]
 }
 
 // WireFunc attaches the module's strategies to def (already holding the
@@ -150,6 +184,7 @@ func (s *Set) BuildOne(cfg *config.Config, g config.GameConfig, docker *dockerct
 // not reuse a bundled id. Local modules no configured game uses are reported
 // through warn (a typo'd game id would otherwise fail silently).
 func ForConfig(cfg *config.Config, warn func(format string, args ...any)) (*Set, error) {
+	reservePanelEnv(cfg)
 	s := Bundled()
 	if cfg.ModulesDir == "" {
 		return s, nil
@@ -220,4 +255,15 @@ func (s *Set) ReplaceRemote(m *Manifest) error {
 	s.wire[m.ID] = m.Wire()
 	s.manifests[m.ID] = m
 	return nil
+}
+
+// reservePanelEnv keeps a module from reading the variables config.yaml names for the panel's own secrets.
+func reservePanelEnv(cfg *config.Config) {
+	ReserveEnv(cfg.Server.MetricsTokenEnv)
+	if n := cfg.Notifications; n != nil {
+		ReserveEnv(n.DiscordWebhookURLEnv, n.NtfyURLEnv, n.NtfyTokenEnv, n.WebhookURLEnv)
+	}
+	if g := cfg.Auth.Google; g != nil {
+		ReserveEnv(g.ClientIDEnv, g.ClientSecretEnv, g.UsersEnv)
+	}
 }

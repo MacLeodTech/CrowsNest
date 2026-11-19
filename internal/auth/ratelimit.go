@@ -72,7 +72,11 @@ func (l *Limiter) Hit(key string) {
 			kept = append(kept, t)
 		}
 	}
-	l.hits[key] = append(kept, now)
+	kept = append(kept, now)
+	if len(kept) > l.max { // beyond max the key is blocked anyway; keep the list from growing without bound
+		kept = append(kept[:0], kept[len(kept)-l.max:]...)
+	}
+	l.hits[key] = kept
 }
 
 // Prune drops every tracked key with no hits inside the current window.

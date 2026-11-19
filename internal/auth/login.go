@@ -5,12 +5,16 @@ import (
 	"errors"
 	"github.com/macleodtech/crowsnest/internal/audit"
 	"log"
+	"mime"
 	"net"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/macleodtech/crowsnest/internal/atomicfile"
 	"github.com/macleodtech/crowsnest/internal/mfa"
 )
 
@@ -43,8 +47,10 @@ type Service struct {
 	Sessions     *SessionManager
 	LoginLimiter *Limiter
 	// UserLimiter throttles failed sign-ins per username, across every address, so guesses spread over many
-	// addresses still add up. Nil turns it off.
+	// addresses still add up. Nil turns it off. An address the user has signed in from lately (see knownAddrs) is
+	// not blocked by it, so a stranger cannot lock the real person out by failing on purpose.
 	UserLimiter *Limiter
+	known       knownAddrs
 	// OnSignIn, when set, is told about every new session (after it is recorded). The panel uses it to notice a
 	// sign-in from a browser or system the person has not used before.
 	OnSignIn       func(SessionRecord)
@@ -81,6 +87,16 @@ type SecondFactor interface {
 	RecoveryLeft(user string) int
 }
 
+// requireJSON refuses a body that is not declared as JSON. A cross-site HTML form can only send form encodings and
+// text/plain without a CORS preflight, so this keeps another site from signing a visitor in to an account of its own.
+func requireJSON(w http.ResponseWriter, r *http.Request) bool {
+	if mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mt != "application/json" {
+		http.Error(w, "expected application/json", http.StatusUnsupportedMediaType)
+		return false
+	}
+	return true
+}
+
 const (
 	mfaCookieName = "crowsnest_mfa"
 	mfaPendingTTL = 5 * time.Minute
@@ -104,7 +120,7 @@ func (s *Service) throttled(ip, username string) bool {
 	if s.LoginLimiter != nil && s.LoginLimiter.Blocked(ip) {
 		return true
 	}
-	return username != "" && s.UserLimiter != nil && s.UserLimiter.Blocked(userKey(username))
+	return username != "" && s.UserLimiter != nil && s.UserLimiter.Blocked(userKey(username)) && !s.known.has(username, ip)
 }
 
 // failed counts one wrong password or code against the address and the username.
@@ -159,6 +175,9 @@ type loginResponse struct {
 func (s *Service) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	if s.PasswordLoginDisabled() {
 		http.Error(w, passwordLoginDisabled, http.StatusForbidden)
+		return
+	}
+	if !requireJSON(w, r) {
 		return
 	}
 	ip := ClientIP(r, s.TrustedProxies)
@@ -233,6 +252,9 @@ func (s *Service) ServeLoginMFA(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if !requireJSON(w, r) {
+		return
+	}
 	ip := ClientIP(r, s.TrustedProxies)
 	if s.throttled(ip, "") {
 		http.Error(w, "too many login attempts, try again later", http.StatusTooManyRequests)
@@ -299,6 +321,7 @@ func (s *Service) newSession(w http.ResponseWriter, r *http.Request, username st
 	if err != nil {
 		return Session{}, err
 	}
+	s.known.add(username, ClientIP(r, s.TrustedProxies))
 	if reg := s.Sessions.Registry; reg != nil {
 		ua := r.UserAgent()
 		if len(ua) > 200 {
@@ -406,4 +429,95 @@ func (s *Service) upgradeHash(username, hash, password string) {
 	if _, err := s.Store.Reload(); err != nil {
 		log.Printf("auth: reload users after a hash upgrade: %v", err)
 	}
+}
+
+// knownAddrs remembers which addresses each user has signed in from in the last knownTTL, and keeps them in a file
+// (0600) when one is set so a restart does not forget them. It only loosens the per-username throttle for those
+// addresses; the per-address throttle still applies to them.
+type knownAddrs struct {
+	mu   sync.Mutex
+	m    map[string]time.Time
+	path string
+}
+
+// LoadKnownAddrs keeps the addresses people signed in from in the file at path, reading what is there now. A missing
+// file is fine; an unreadable one is ignored (the throttle then simply starts without exemptions).
+func (s *Service) LoadKnownAddrs(path string) {
+	k := &s.known
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	k.path = path
+	raw, err := os.ReadFile(path) // #nosec G304 -- operator-configured location next to the settings file
+	if err != nil {
+		return
+	}
+	var disk map[string]int64
+	if json.Unmarshal(raw, &disk) != nil {
+		return
+	}
+	k.m = map[string]time.Time{}
+	now := time.Now()
+	for key, exp := range disk {
+		if t := time.Unix(exp, 0); t.After(now) && len(k.m) < knownMax {
+			k.m[key] = t
+		}
+	}
+}
+
+// saveLocked writes the map; the caller holds k.mu. Failures are logged: the exemption is a convenience.
+func (k *knownAddrs) saveLocked() {
+	if k.path == "" {
+		return
+	}
+	disk := make(map[string]int64, len(k.m))
+	for key, t := range k.m {
+		disk[key] = t.Unix()
+	}
+	out, err := json.Marshal(disk)
+	if err == nil {
+		err = atomicfile.Write(k.path, out, 0o600)
+	}
+	if err != nil {
+		log.Printf("auth: could not save known sign-in addresses: %v", err)
+	}
+}
+
+const (
+	knownTTL = 30 * 24 * time.Hour
+	knownMax = 4096
+)
+
+func (k *knownAddrs) key(user, ip string) string { return strings.ToLower(user) + "|" + ip }
+
+func (k *knownAddrs) add(user, ip string) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.m == nil {
+		k.m = map[string]time.Time{}
+	}
+	now := time.Now()
+	if len(k.m) >= knownMax {
+		for key, t := range k.m {
+			if now.After(t) {
+				delete(k.m, key)
+			}
+		}
+		if len(k.m) >= knownMax { // still full: forget everything rather than grow
+			clear(k.m)
+		}
+	}
+	key := k.key(user, ip)
+	fresh := now.Add(knownTTL)
+	old, seen := k.m[key]
+	k.m[key] = fresh
+	if !seen || fresh.Sub(old) > 24*time.Hour { // a sign-in from a known address rewrites the file at most daily
+		k.saveLocked()
+	}
+}
+
+func (k *knownAddrs) has(user, ip string) bool {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	t, ok := k.m[k.key(user, ip)]
+	return ok && time.Now().Before(t)
 }

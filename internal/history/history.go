@@ -63,6 +63,9 @@ type Store struct {
 	path      string
 	retention time.Duration
 
+	// OnRecord, if set, is called after each event is stored (outside the lock) with its kind. Set it before use.
+	OnRecord func(kind string)
+
 	mu     sync.Mutex
 	events []Event // chronological
 
@@ -130,6 +133,9 @@ func (s *Store) Record(kind, game, actor, detail string) {
 	line, err := json.Marshal(e)
 	if err != nil {
 		return
+	}
+	if s.OnRecord != nil {
+		defer s.OnRecord(kind)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

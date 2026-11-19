@@ -45,8 +45,6 @@ Palworld, Valheim and Windrose passed their restored-world play-tests on 2026-11
   scope are in place; never run there). See `docs/backups.md`. Restore is verified on a real Minecraft world
   (2026-11-16) and on a config-file game on the test stack; Valheim, Source, 7 Days to Die and Don't Starve Together
   are unchecked on real worlds. Config-file games back up inside their own data and would need the bind added by hand.
-- [ ] **Backup verification:** a periodic job that opens the newest archive (`tar -tzf`) and records the result in
-  `backup/health`, so a bad backup is found before a restore is needed.
 - [ ] **Commit the CrowsNest parts of `~/docker`** (compose, config, policy, README). They are uncommitted and mixed
   with unrelated edits, so commit selectively.
 - [ ] **Passkeys on a phone and a security key** (Windows Hello is done).
@@ -55,37 +53,25 @@ Palworld, Valheim and Windrose passed their restored-world play-tests on 2026-11
 
 ### Then: hardening and small fixes
 
-- [ ] **Security re-review at 0.16.x** of what changed since v0.13.0: the Engine API, file-editing forms, macvlan
-  networking, generated secrets shown on the card. This review covered auth, the web surface, the guard create rules
-  and `gamefiles`; still to audit are the guard's remaining paths (exec, networks, volumes), `managed` request
-  handling, `exclusivity` and the dashboard JS (`app.js`, `games.js`, `settings.js`), which were only skimmed.
-- [ ] **Guard memory ceilings.** `Memory`, `MemorySwap` and `ShmSize` accept any size in the guard
-  (`dockerguard/rules.go`); memory admission lives only in the panel, which the guard assumes may be compromised. Add
-  a per-scope maximum in `policy.yaml`. Denial-of-service risk, not an escape.
-- [ ] **Cap `Limiter.Hit`** (`auth/ratelimit.go`): it appends on every failed sign-in even when the key is already
-  over the limit, so one IP can grow its list without bound inside the window. Keep at most `max` entries.
-- [ ] **File-edit history keeps raw secrets.** `gamefiles` stores earlier versions with redacted values un-masked in
-  `HistoryDir` (0600, admin-only). Encrypt them with `vault`, or redact before keeping.
-- [ ] **Request deadlines.** The main server sets `ReadHeaderTimeout` only, so a slow-body client can hold a
-  connection. Add `http.TimeoutHandler` (or per-request deadlines through `ResponseController`) for non-streaming
-  routes.
-- [ ] **Symlink check for bind sources.** `bindOK` matches exact paths, but a game with write access to its data
-  folder could plant a symlink that a later bind follows on the host. Resolve with `EvalSymlinks` at create time, or
-  have `doctor` warn.
-- [ ] **Update diff shows permission changes only**, so a changed env value shows "nothing" (found in R5; still the
-  case).
-- [ ] **A game that failed for a missing module only recovers after a restart** (found in R5).
-- [ ] **Static asset delivery:** gzip and content-hashed `Cache-Control` for `/static/` (`app.js` is ~1.7k lines,
-  unminified). Low value on a LAN or Tailscale, more behind Cloudflare.
+Nothing left here that can be built without a live host; see the sections above and below.
+
+### STRIDE threat model follow-ups (2026-11-19)
+
+The review and its fixes are in `CHANGELOG.md` and the findings table is in `docs/threat-model.md`. Left:
+
+- [ ] **Turn the new protections on in prod.** In `~/docker`: set `GUARD_ALLOW_FROM` on the guard to the internal
+  network's subnet (pin the subnet in compose first), add `max_memory:` to `policy/policy.yaml` (the largest game's
+  `runtime.memory`; every module then needs one), mount the games and backups disks `nosuid,nodev` and run `crowsnest
+  doctor`, set a `/metrics` token of 24+ characters if `/metrics` is on, enrol TOTP or a passkey on every admin, and
+  confirm the audit anchor notice arrives on Discord (it needs `DISCORD_WEBHOOK_URL`; see the live check above).
+- [ ] **Lockout from a new address** is still possible while an attack on one name runs: the per-user throttle
+  exempts only addresses that user signed in from in the last 30 days (now kept in `known-addrs.json`). A progressive
+  delay instead of a block, or a second factor that bypasses it, would close the rest.
 
 ### Features to consider
 
-- [ ] **"Server is ready" notice:** a Discord ping through the existing notifier, using startup-progress detection,
-  for a friend waiting on a slow Palworld or Windrose start.
 - [ ] **Per-game play history and stats page:** hours played, peak players and crashes, from the data `history` and
   `playerwatch` already collect.
-- [ ] **Metrics dashboard and alerts:** a ready-made Grafana JSON and alert rules on top of `/metrics` (crash loop,
-  offsite stale, disk below 10%).
 - [ ] **`files:` entries for the Source, Don't Starve Together and 7 Days to Die modules.** Parked by the owner on
   2026-11-17. The modules live in the modules repository; confirm each config path against the real image first. Also
   a stopped-game edit for games set up in `config.yaml` (low value).

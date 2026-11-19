@@ -135,6 +135,7 @@ func (s Sources) Load() (*Result, error) {
 				continue
 			}
 			m.pinDigest = pol.PinDigests
+			m.maxMemory = pol.maxMemory
 			m.needsOwner = len(pol.Names) == 0 && pol.exception(m.Name) == nil
 			taken[m.Name] = true
 			res.Scopes = append(res.Scopes, m)

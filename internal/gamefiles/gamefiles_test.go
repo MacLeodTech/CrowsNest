@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/macleodtech/crowsnest/internal/vault"
 )
 
 func TestNormalize(t *testing.T) {
@@ -432,5 +434,50 @@ func TestNormalizeDocsLink(t *testing.T) {
 		if _, err := Normalize([]Spec{{ID: "f", Path: "/data/f.ini", Docs: d}}); err == nil {
 			t.Errorf("docs %q was accepted", d)
 		}
+	}
+}
+
+func TestKeptVersionsAreEncryptedWithAVault(t *testing.T) {
+	vlt, err := vault.New("", filepath.Join(t.TempDir(), "k"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	fd := &fakeDocker{content: "a=1\npass=hunter2\n"}
+	svc := &Service{Docker: fd, HistoryDir: dir, Vault: vlt}
+	sp, _ := Normalize([]Spec{{ID: "cfg", Path: "/c", MaxBytes: 64, Redact: []string{`^pass=(.*)$`}}})
+	s := sp[0]
+	ctx := context.Background()
+	_, hash, _ := svc.Read(ctx, "g", "g", s)
+	if _, err := svc.Write(ctx, "g", "g", s, "a=2\npass="+Mask+"\n", hash); err != nil {
+		t.Fatal(err)
+	}
+	vs, _ := svc.History("g", s)
+	if len(vs) != 1 {
+		t.Fatalf("history: %v", vs)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "g", "cfg", vs[0].ID))
+	if err != nil || strings.Contains(string(raw), "hunter2") || !vault.IsSealed(string(raw)) {
+		t.Fatalf("kept version on disk: %q %v", raw, err)
+	}
+	if old, err := svc.Version("g", s, vs[0].ID); err != nil || old != "a=1\npass=hunter2\n" {
+		t.Errorf("version back: %q %v", old, err)
+	}
+	// moved to another game's folder, it no longer opens
+	if err := os.MkdirAll(filepath.Join(dir, "other", "cfg"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "other", "cfg", vs[0].ID), raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Version("other", s, vs[0].ID); err == nil {
+		t.Error("a version sealed for one game opened under another")
+	}
+	// versions kept before the vault was set stay readable
+	if err := os.WriteFile(filepath.Join(dir, "g", "cfg", "20200101T000000.000000000Z.txt"), []byte("old=1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := svc.Version("g", s, "20200101T000000.000000000Z.txt"); err != nil || got != "old=1\n" {
+		t.Errorf("legacy plain version: %q %v", got, err)
 	}
 }

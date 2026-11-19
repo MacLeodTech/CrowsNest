@@ -39,14 +39,18 @@ type Watcher struct {
 	// Hub, when set, supplies the observations, and Run re-checks on each of
 	// its change notifications instead of on a ticker. Nil means probe every
 	// game directly each interval.
-	Hub      *statehub.Hub
+	Hub *statehub.Hub
+	// Ready, when set, is told when a game that was seen starting is online: for a friend waiting on a slow start.
+	// A game found already online (the panel restarted) is never announced.
+	Ready    Notifier
 	interval time.Duration
 	last     map[string]state // present only while a game is online and readable
+	starting map[string]bool  // games seen starting, until they come online or go offline
 }
 
 // New builds a Watcher that polls every interval (unused with a Hub).
 func New(registry *games.Registry, notifier Notifier, interval time.Duration) *Watcher {
-	return &Watcher{registry: registry, notifier: notifier, interval: interval, last: map[string]state{}}
+	return &Watcher{registry: registry, notifier: notifier, interval: interval, last: map[string]state{}, starting: map[string]bool{}}
 }
 
 // Run polls until ctx is cancelled.
@@ -81,7 +85,11 @@ func (w *Watcher) Run(ctx context.Context) {
 // is harmless.
 func (w *Watcher) Tick(ctx context.Context) {
 	for _, d := range w.registry.All() {
-		if d.Status == nil || !games.CanCountPlayers(d) {
+		if d.Status == nil {
+			continue
+		}
+		counts := games.CanCountPlayers(d)
+		if !counts && w.Ready == nil {
 			continue
 		}
 		var o statehub.Observation
@@ -93,7 +101,27 @@ func (w *Watcher) Tick(ctx context.Context) {
 		} else {
 			o = statehub.Probe(ctx, d)
 		}
-		w.check(ctx, d, o)
+		w.checkReady(ctx, d, o)
+		if counts {
+			w.check(ctx, d, o)
+		}
+	}
+}
+
+// checkReady announces the first online reading after a starting one. Unknown readings change nothing.
+func (w *Watcher) checkReady(ctx context.Context, d games.GameDef, o statehub.Observation) {
+	switch o.Status {
+	case games.StatusStarting:
+		w.starting[d.ID] = true
+	case games.StatusOnline:
+		if w.starting[d.ID] {
+			delete(w.starting, d.ID)
+			if w.Ready != nil {
+				w.Ready.Notify(ctx, fmt.Sprintf("🟢 **%s** is ready to join.", d.DisplayName))
+			}
+		}
+	case games.StatusOffline, games.StatusStopping:
+		delete(w.starting, d.ID)
 	}
 }
 

@@ -100,6 +100,8 @@ type App struct {
 	// MetricsToken, when set, serves GET /metrics (Prometheus) to a scraper
 	// presenting it as a bearer token. Empty leaves the route out.
 	MetricsToken string
+	// MetricsLimiter throttles wrong bearer tokens on /metrics per client address. Optional.
+	MetricsLimiter *auth.Limiter
 	// Crashes adds crash counts to /metrics. Optional.
 	Crashes CrashStats
 	// HostPaths are the mounted paths whose free space /api/host reports.

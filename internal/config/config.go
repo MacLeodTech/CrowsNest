@@ -337,6 +337,15 @@ type NotificationsConfig struct {
 	// PlayerEvents posts a message when a player joins or leaves a game
 	// (needs the webhook above). On by default; set false to silence it.
 	PlayerEvents *bool `yaml:"player_events"`
+
+	// ReadyNotices posts a message when a game that was starting is ready to join. On by default; set false to
+	// silence it.
+	ReadyNotices *bool `yaml:"ready_notices"`
+}
+
+// ReadyNoticesEnabled reports whether "ready to join" messages are on.
+func (n NotificationsConfig) ReadyNoticesEnabled() bool {
+	return n.ReadyNotices == nil || *n.ReadyNotices
 }
 
 // PlayerEventsEnabled reports whether join/leave messages are on.

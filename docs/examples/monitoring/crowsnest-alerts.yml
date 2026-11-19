@@ -1,0 +1,63 @@
+# Prometheus alert rules for the metrics CrowsNest serves at /metrics (docs/operating.md, "Metrics").
+# Add this file under rule_files: in prometheus.yml. Thresholds are starting points: change them to taste.
+groups:
+  - name: crowsnest
+    rules:
+      - alert: CrowsNestDown
+        expr: up{job="crowsnest"} == 0
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "CrowsNest is not answering its metrics scrape"
+
+      - alert: GameCrashLooping
+        expr: crowsnest_game_crash_looping == 1
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "{{ $labels.game }} is crash-looping"
+          description: "It crashed repeatedly inside the crash-loop window. Check its logs on the game's page."
+
+      - alert: BackupsFolderProblem
+        expr: crowsnest_backups_ok == 0
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: "The backups folder failed its check, so backups are paused"
+          description: "An unmounted drive, a full disk or an unwritable folder. See Settings, Backups."
+
+      - alert: BackupDamaged
+        expr: crowsnest_backups_damaged > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "The newest backup of a game cannot be read back"
+          description: "Take a new backup before relying on it; the Backups page names the file."
+
+      - alert: OffsiteCopyStale
+        expr: crowsnest_backups_offsite_ok == 0
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: "The offsite backup copy has failed or stopped reporting"
+
+      - alert: BackupsFolderLowSpace
+        expr: crowsnest_backups_free_bytes < 5 * 1024 * 1024 * 1024
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "Under 5 GiB free in the backups folder"
+
+      - alert: HostDiskLow
+        expr: crowsnest_host_disk_free_bytes / crowsnest_host_disk_total_bytes < 0.10
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.path }} is under 10% free"
+
+      - alert: HostMemoryLow
+        expr: crowsnest_host_memory_available_bytes / crowsnest_host_memory_total_bytes < 0.05
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "The host has under 5% of its memory available"

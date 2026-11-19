@@ -367,6 +367,11 @@ func (m *Manifest) validate() error {
 		}
 		seen[o.Key] = true
 	}
+	for where, v := range map[string]string{"api.password_env": m.API.PasswordEnv, "rcon.password_env": m.RCON.PasswordEnv, "players.password_env": m.Players.PasswordEnv} {
+		if ReservedEnv(v) {
+			return fmt.Errorf("module %q: %s names one of the panel's own secrets (CROWSNEST_ and GUARD_ names are never readable by a module)", m.ID, where)
+		}
+	}
 	hasAPI := m.API.BaseURL != ""
 	rconActs := 0
 	for _, a := range m.Actions {

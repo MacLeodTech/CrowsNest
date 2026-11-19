@@ -210,7 +210,8 @@ Each topic here is a short version; the page it links to has the detail.
 - **Activity log and playtime**, crash-loop detection, optional Prometheus `/metrics`, a host health strip, an
   admin console for games that support one, and join details with copy buttons on each card.
 
-Details: [docs/operating.md](docs/operating.md).
+Details: [docs/operating.md](docs/operating.md). Something not working (a Start that fails, a missing container)?
+See [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ### Games from the dashboard
 

@@ -144,6 +144,8 @@ func runDoctor(cfg *config.Config, docker dockerPinger, w io.Writer) int {
 		r.add(docOK, fmt.Sprintf("%d trusted proxy range(s)", len(cfg.Server.TrustedProxies)), "")
 	}
 
+	doctorSecurity(r, cfg, users)
+
 	fmt.Fprintln(w, "\nGames")
 	mods, err := modules.ForConfig(cfg, func(f string, a ...any) { r.add(docWarn, fmt.Sprintf(f, a...), "") })
 	if err != nil {
@@ -248,6 +250,8 @@ func doctorBackups(r *doctorReport, cfg *config.Config) {
 		return
 	}
 	r.add(docOK, fmt.Sprintf("backups folder %s is writable", mount), "")
+	doctorSuid(r, "the backups folder", mount, "/proc/self/mountinfo")
+	doctorSymlinks(r, "the backups folder", mount)
 	if mounted, known := isMountPoint(mount, "/proc/self/mountinfo"); known && !mounted {
 		r.add(docWarn, fmt.Sprintf("%s is not a bind mount: it is a plain folder inside the container, so backups there are lost when the container is recreated", mount),
 			"add ${BACKUPS_DIR}:"+mount+" to the crowsnest service's volumes (the host folder must exist before Docker starts)")
@@ -320,6 +324,9 @@ func doctorManaged(r *doctorReport, cfg *config.Config) {
 		return
 	}
 	r.add(docOK, "policy file loads: "+cfg.Managed.PolicyFile, "")
+	doctorPolicyHardening(r, pol)
+	doctorSuid(r, "the games folder", pol.GamesRoot, "/proc/self/mountinfo")
+	doctorSymlinks(r, "the games folder", pol.GamesRoot)
 	if fi, err := os.Stat(pol.GamesRoot); err != nil || !fi.IsDir() {
 		r.add(docWarn, fmt.Sprintf("the policy's games_root %s is not a folder this process can see", pol.GamesRoot),
 			"that path is the host's; it need not exist inside the panel, but check it exists on the host")

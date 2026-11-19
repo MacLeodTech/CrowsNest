@@ -50,6 +50,7 @@ night_shutdown:                # off by default — a preset curfew is a stronge
 notifications:                 # Discord webhook, posted on both idle and night auto-stop
   discord_webhook_url_env: DISCORD_WEBHOOK_URL   # names an env var; unset/empty = disabled
   # player_events: false          # join/leave messages are on whenever a webhook is set
+  # ready_notices: false          # "is ready to join" after a start is on whenever a webhook is set
 
 # A game that crashes (non-zero exit, not a normal stop) this many times inside the window is
 # reported once: an entry in the activity log and, with a webhook above, a Discord message.

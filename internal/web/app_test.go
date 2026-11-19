@@ -682,7 +682,9 @@ func TestLoginLogoutFlow(t *testing.T) {
 
 	loginBody, _ := json.Marshal(map[string]string{"username": "tester", "password": "s3cret-pw"})
 	rec := httptest.NewRecorder()
-	h.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(loginBody)))
+	loginReq := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(loginBody))
+	loginReq.Header.Set("Content-Type", "application/json")
+	h.mux().ServeHTTP(rec, loginReq)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("POST /login = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body)
 	}

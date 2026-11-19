@@ -318,6 +318,7 @@ func serve() error {
 		SecureCookies:        cfg.Server.SecureCookies,
 		DisablePasswordLogin: !cfg.Auth.PasswordLoginEnabled(),
 	}
+	authSvc.LoadKnownAddrs(filepath.Join(filepath.Dir(cfg.Server.SettingsFile), "known-addrs.json"))
 	envGoogle, err := googleLogin(cfg)
 	if err != nil {
 		return err
@@ -425,7 +426,7 @@ func serve() error {
 	exclusivityMgr.History = activity
 	backups := &backup.Manager{Docker: docker, Root: backupRoot, History: activity, BaseContext: ctx, OffsiteFile: cfg.Platform.OffsiteStatusFile}
 	exclusivityMgr.Backups = backups
-	gameFiles := &gamefiles.Service{Docker: docker, HistoryDir: filepath.Join(filepath.Dir(cfg.Server.SettingsFile), "file-history")}
+	gameFiles := &gamefiles.Service{Docker: docker, HistoryDir: filepath.Join(filepath.Dir(cfg.Server.SettingsFile), "file-history"), Vault: vlt}
 	exclusivityMgr.MaxActiveFunc = func() int { return settingsStore.Get().MaxActiveGames }
 	exclusivityMgr.CooldownFunc = func(id string) (time.Duration, bool) {
 		secs, ok := settingsStore.Get().CooldownOverride(id)
@@ -454,27 +455,30 @@ func serve() error {
 		}
 	}
 
+	metricsLimiter := auth.NewLimiter(10, 5*time.Minute) // wrong bearer tokens per address
+	go metricsLimiter.RunPruner(ctx, 10*time.Minute)
 	app := &web.App{
-		MetricsToken: metricsToken,
-		Hub:          hub,
-		Registry:     registry,
-		Docker:       docker,
-		Exclusivity:  exclusivityMgr,
-		Auth:         authSvc,
-		Setup:        setup,
-		Google:       google,
-		GoogleConf:   googleConf,
-		AuthPrefs:    authPrefs,
-		MFA:          mfaStore,
-		Profiles:     profiles,
-		OIDC:         oidcLogin,
-		Settings:     settingsStore,
-		TimeZone:     cfg.Server.TZ,
-		History:      activity,
-		HostPaths:    cfg.Server.HostDiskPaths,
-		Backups:      backups,
-		Files:        gameFiles,
-		Templates:    templates,
+		MetricsToken:   metricsToken,
+		MetricsLimiter: metricsLimiter,
+		Hub:            hub,
+		Registry:       registry,
+		Docker:         docker,
+		Exclusivity:    exclusivityMgr,
+		Auth:           authSvc,
+		Setup:          setup,
+		Google:         google,
+		GoogleConf:     googleConf,
+		AuthPrefs:      authPrefs,
+		MFA:            mfaStore,
+		Profiles:       profiles,
+		OIDC:           oidcLogin,
+		Settings:       settingsStore,
+		TimeZone:       cfg.Server.TZ,
+		History:        activity,
+		HostPaths:      cfg.Server.HostDiskPaths,
+		Backups:        backups,
+		Files:          gameFiles,
+		Templates:      templates,
 	}
 	authSvc.OnSignIn = app.NoteSignIn
 
@@ -528,6 +532,22 @@ func serve() error {
 	app.Notify = notifyStatus
 	app.Notifier = notifier
 	app.NotifyConfigured = len(channels) > 0
+	if len(channels) > 0 {
+		// The panel can rewrite its own audit file; a hash posted where it cannot reach cannot be rewritten.
+		kick := make(chan struct{}, 1)
+		if activity != nil {
+			// who may sign in, and the panel's own settings, are what an intruder most wants to erase
+			activity.OnRecord = func(kind string) {
+				if kind == history.KindUsers || kind == history.KindSettings {
+					select {
+					case kick <- struct{}{}:
+					default:
+					}
+				}
+			}
+		}
+		go audit.RunAnchors(ctx, auditLog, 24*time.Hour, audit.AnchorSoon, kick, func(msg string) { notifier.Notify(ctx, msg) })
+	}
 	if len(channels) == 0 && cfg.Notifications.DiscordWebhookURLEnv != "" {
 		log.Printf("notify: %s is not set — Discord notifications disabled", cfg.Notifications.DiscordWebhookURLEnv)
 	}
@@ -625,6 +645,9 @@ func serve() error {
 		joinLeave = notifier
 	}
 	watcher := playerwatch.New(registry, joinLeave, 30*time.Second)
+	if len(channels) > 0 && cfg.Notifications.ReadyNoticesEnabled() {
+		watcher.Ready = notifier
+	}
 	watcher.History = activity
 	watcher.Hub = hub // re-checks on every hub change
 	go watcher.Run(ctx)
@@ -634,7 +657,7 @@ func serve() error {
 	// for as long as the dashboard is watching.
 	srv := &http.Server{
 		Addr:              cfg.Server.Addr,
-		Handler:           auth.SecurityHeaders(cfg.Server.SecureCookies, app.MFAGate(newMux(app))),
+		Handler:           auth.SecurityHeaders(cfg.Server.SecureCookies, bodyDeadlines(app.MFAGate(newMux(app)))),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 		MaxHeaderBytes:    64 << 10,
@@ -1088,4 +1111,25 @@ func envValue(name string) string {
 		return ""
 	}
 	return os.Getenv(name)
+}
+
+// Deadlines for requests that carry a body. A client that sends the headers and then trickles the body would hold a
+// connection (and its goroutine) for as long as it likes; ReadHeaderTimeout does not cover that. GET streams (logs,
+// progress, events) are left alone: a read deadline also ends the watch for a closed connection, which would cut an
+// open stream short.
+var (
+	bodyReadTimeout  = 60 * time.Second // all of the request, headers and body
+	bodyWriteTimeout = 5 * time.Minute  // a start or restore that holds the request open
+)
+
+func bodyDeadlines(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+			rc := http.NewResponseController(w)
+			now := time.Now()
+			_ = rc.SetReadDeadline(now.Add(bodyReadTimeout))
+			_ = rc.SetWriteDeadline(now.Add(bodyWriteTimeout))
+		}
+		next.ServeHTTP(w, r)
+	})
 }
